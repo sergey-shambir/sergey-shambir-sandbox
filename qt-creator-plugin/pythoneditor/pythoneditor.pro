@@ -21,14 +21,7 @@ HEADERS += \
     features/Highlighter.h \
     features/Lexer.h
 
-OTHER_FILES += \
-    lexer/keywords.txt \
-    lexer/platform_functions.txt \
-    lexer/syntax.txt \
-    pythoneditor.pluginspec \
-    pythoneditor.mimetypes.xml \
-    namespace_tpl.txt \
-    temp.txt
+OTHER_FILES +=
 
 SOURCES += \
     core/Plugin.cpp \
@@ -41,6 +34,13 @@ SOURCES += \
 
 RESOURCES += \
     resource.qrc
+
+
+
+
+
+
+
 
 
 
