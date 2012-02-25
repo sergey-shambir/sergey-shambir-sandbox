@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/pythoneditor">
+        <file>pythoneditor.mimetypes.xml</file>
+        <file>images/text-x-python.png</file>
+    </qresource>
+</RCC>
