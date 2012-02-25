@@ -1,0 +1,53 @@
+<html>
+<head>
+<title>PythonEditor ReadMe file</title>
+<style>
+body
+{
+font-family: "Lucida Console", Monaco, monospace;
+}
+body p
+{
+color: #202060;
+}
+a
+{
+font-weight: bold;
+}
+.added
+{
+color: green;
+font-weight: bold;
+}
+ul li
+{
+margin-bottom: 5px;
+}
+</style>
+</head>
+<body>
+
+<h2>Simple plugin for kawai Python highlighting.</h2>
+
+<p>If you want to compile this plugin, you should:</p>
+
+<ul>
+<li><p>Setup Qt build enviroment (mingw + qmake + Qt for Windows or gcc + qt-devel + qmake for Linux)</p></li>
+<li><p>Download QtCreator source code here: <a title="Nokia's Qt download center" href="http://qt.nokia.com/downloads">qt.nokia.com/downloads</a></p></li>
+<li><p>put folder with source code ("pythoneditor") into "%QT-CREATOR-SOURCE%/src/plugins"</p></li>
+<li><p>modify ".../src/plugins/plugins.pro" file like this:</p></br>
+SUBDIRS = plugin_coreplugin \</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# ...</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;plugin_welcome <span class="added">\</br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;plugin_pythoneditor</span></br>
+# ... </br>
+# at file end: </br>
+<span class="added">plugin_pythoneditor.subdir = pythoneditor</span></br>
+<span class="added">plugin_pythoneditor.depends = plugin_texteditor</span></br>
+</li>
+<li><p>run "qmake qtcreator.pro && make"</p></li>
+<li><p>Look in "bin" folder. Enjoy Python coding!</p></li>
+</ul>
+
+</body>
+</html>
