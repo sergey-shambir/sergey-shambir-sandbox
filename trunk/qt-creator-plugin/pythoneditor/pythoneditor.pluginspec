@@ -11,6 +11,7 @@ This plugin may be used under the terms of the GNU Lesser General Public License
     <dependencyList>
         <dependency name="Core" version="2.4.0"/>
         <dependency name="TextEditor" version="2.4.0"/>
+        <dependency name="CppTools" version="2.4.0"/>
     </dependencyList>
 </plugin>
  

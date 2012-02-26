@@ -5,6 +5,7 @@ include(../../qtcreatorplugin.pri)
 # dependencies
 include(../../plugins/coreplugin/coreplugin.pri)
 include(../../plugins/texteditor/texteditor.pri)
+include(../../plugins/cpptools/cpptools.pri)
 #include(../../plugins/projectexplorer/projectexplorer.pri)
 
 DEFINES += \
@@ -19,9 +20,11 @@ HEADERS += \
     core/Editor.h \
     features/FileWizard.h \
     features/Highlighter.h \
-    features/Lexer.h
+    features/Lexer.h \
+    core/features.h \
+    features/Indenter.h
 
-OTHER_FILES +=
+OTHER_FILES += pythoneditor.pluginspec
 
 SOURCES += \
     core/Plugin.cpp \
@@ -30,10 +33,26 @@ SOURCES += \
     core/Editor.cpp \
     features/FileWizard.cpp \
     features/Highlighter.cpp \
-    features/Lexer.cpp
+    features/Lexer.cpp \
+    features/Indenter.cpp
 
 RESOURCES += \
     resource.qrc
+
+FORMS +=
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -13,8 +13,9 @@
 #include "Plugin.h"
 #include "EditorFactory.h"
 
-using namespace PythonEditor::Internal;
 using namespace PythonEditor::Constants;
+
+namespace PythonEditor {
 
 CEditorFactory::CEditorFactory(QObject *parent)
     : Core::IEditorFactory(parent)
@@ -54,3 +55,5 @@ QStringList CEditorFactory::mimeTypes() const
 {
     return m_mimeTypes;
 }
+
+} // PythonEditor

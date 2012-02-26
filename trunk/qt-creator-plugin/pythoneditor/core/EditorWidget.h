@@ -8,20 +8,17 @@
   Эти интерфейсы не привязаны к обычному текстовому полю, и
   способ редактирования файлов может быть любым, например, как в Firebug.
 
-  Здесь редактор унаследован от BaseTextEditorWidget.
+********************************************************************************
+  Редактор унаследован от BaseTextEditorWidget.
+  Базовый класс является платформой, а не самостоятельным редактором,
+  включать те или иные возможности нужно явно, по умолчанию отключена даже
+  история редактора (Do/Undo).
   */
 
 #include <texteditor/basetexteditor.h>
 #include <utils/uncommentselection.h>
 
-// Preliminary definitions
-QT_BEGIN_NAMESPACE
-class QTimer;
-QT_END_NAMESPACE
-// end
-
 namespace PythonEditor {
-namespace Internal {
 
 class CEditorWidget : public TextEditor::BaseTextEditorWidget
 {
@@ -34,27 +31,18 @@ public:
     virtual void unCommentSelection();
 
 public slots:
+    /**
+      Обработка общих для IDE настроек подсветки кода, ошибок, предупреждений
+      */
     virtual void setFontSettings(const TextEditor::FontSettings &);
 
 protected:
     TextEditor::BaseTextEditor *createEditor();
-    /*
-    bool event(QEvent *e);
-    void createToolBar(Internal::GLSLEditorEditable *editable);
-    */
-
-private slots:
-   // void updateDocument();
-   // void updateDocumentNow();
 
 private:
     Utils::CommentDefinition m_commentDefinition;
-  //  QTimer *m_updateDocumentTimer;
-   // QComboBox *m_outlineCombo;
-   // Document::Ptr m_document;
 };
 
-} // namespace Internal
 } // namespace PythonEditor
 
 #endif // TEXTWIDGET_H_4b0236a6_e71d_4252_9360_5631f6fd5b5a

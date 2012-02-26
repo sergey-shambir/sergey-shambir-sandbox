@@ -7,20 +7,12 @@
 
 #include <extensionsystem/iplugin.h>
 
-// Preliminary definitions
-namespace TextEditor {
-class TextEditorActionHandler;
-}
 namespace PythonEditor {
-namespace Internal {
 class CEditorFactory;
 class CTextEditorWidget;
 }
-}
-// end
 
 namespace PythonEditor {
-namespace Internal {
 
 class CPlugin
   : public ExtensionSystem::IPlugin
@@ -69,7 +61,6 @@ private:
     CEditorFactory* m_factory;
 };
 
-} // namespace Internal
 } // namespace PythonEditor
 
 #endif // PLUGIN_H_ec8aa375_5969_4bfa_b9fb_93383a3a186c

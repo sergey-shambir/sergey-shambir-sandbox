@@ -14,8 +14,9 @@
 #include "EditorWidget.h"
 #include "Editor.h"
 
-using namespace PythonEditor::Internal;
 using namespace PythonEditor::Constants;
+
+namespace PythonEditor {
 
 CEditor::CEditor(CEditorWidget *editorWidget)
     :BaseTextEditor(editorWidget)
@@ -62,3 +63,5 @@ bool CEditor::open(QString *errorString,
                                                    realFileName);
     return status;
 }
+
+} // PythonEditor
