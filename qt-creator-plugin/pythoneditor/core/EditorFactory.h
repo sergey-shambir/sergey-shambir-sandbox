@@ -6,7 +6,6 @@
 #include <QtCore/QStringList>
 
 namespace PythonEditor {
-namespace Internal {
 
 class CEditorFactory : public Core::IEditorFactory
 {
@@ -25,7 +24,6 @@ private:
     QStringList m_mimeTypes;
 };
 
-} // namespace Internal
 } // namespace GLSLEditor
 
 #endif // FACTORY_H_0f6e1e32_805b_4321_82ae_122208f582bd

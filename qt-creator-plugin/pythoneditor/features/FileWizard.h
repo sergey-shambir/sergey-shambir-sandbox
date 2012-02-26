@@ -1,30 +1,23 @@
-#ifndef FILEWIZARD_H_f54dc1ca_2b85_4bfb_b547_a6e533ee929c
-#define FILEWIZARD_H_f54dc1ca_2b85_4bfb_b547_a6e533ee929c
-
-/**
-   ласс CFileWizard реализует интерфейс IWizard (QtCreator),
-  добавл€€ новый пункт при создании файла/проекта
-  и соответствующий мастер создани€
-  */
+#ifndef PYTHON_EDITOR__FILE_WIZARD__INCLUDED
+#define PYTHON_EDITOR__FILE_WIZARD__INCLUDED
 
 #include <coreplugin/basefilewizard.h>
 
 namespace PythonEditor {
-namespace Internal {
 
+/**
+  CFileWizard добавл€ет мастер создани€ файлов дл€ скриптов Python
+  */
 class CFileWizard
   : public Core::BaseFileWizard
 {
     Q_OBJECT
 
 public:
-    typedef Core::BaseFileWizardParameters Parameters;
-
     /**
       »нициализаци€, добавление пункта в диалоге создани€ файла/проекта
       */
-    explicit CFileWizard(const Parameters& params,
-                         QObject* parent = 0);
+    explicit CFileWizard(QObject* parent = 0);
     virtual ~CFileWizard();
 
 protected:
@@ -42,7 +35,6 @@ protected:
                                                QString *errorMessage) const;
 };
 
-} // namespace Internal
 } // namespace PythonEditor
 
-#endif // FILEWIZARD_H_f54dc1ca_2b85_4bfb_b547_a6e533ee929c
+#endif // PYTHON_EDITOR__FILE_WIZARD__INCLUDED

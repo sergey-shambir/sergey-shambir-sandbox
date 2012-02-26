@@ -3,31 +3,30 @@
 #include <texteditor/fontsettings.h>
 #include <texteditor/texteditorconstants.h>
 #include <texteditor/basetextdocument.h>
+#include <texteditor/indenter.h>
+#include <texteditor/autocompleter.h>
 
 // Self headers
-#include "../features/Highlighter.h"
+#include "features.h"
 #include "Editor.h"
 #include "EditorWidget.h"
 
-namespace PythonEditor
-{
-namespace Internal
-{
-
-static const unsigned UPDATE_DOCUMENT_DEFAULT_INTERVAL = 150u;
+namespace PythonEditor {
 
 CEditorWidget::CEditorWidget(QWidget *parent)
     :TextEditor::BaseTextEditorWidget(parent)
 {
-    // Допустимы только однострочные комментарии, начинающиеся с "#"
-    m_commentDefinition.clearCommentStyles();
+    m_commentDefinition.setMultiLineStart(QLatin1String("\"\"\""));
+    m_commentDefinition.setMultiLineEnd(QLatin1String("\"\"\""));
     m_commentDefinition.setSingleLine(QLatin1String("#"));
 
+#ifdef PYTHON_EDITOR__INDENTER__INCLUDED
+    setIndenter(new CIndenter());
+#endif
+
+#ifdef PYTHON_EDITOR__HIGHLIGHTER__INCLUDED
     new CHighlighter(baseTextDocument());
-   // m_updateDocumentTimer = new QTimer(this);
-   // m_updateDocumentTimer->setInterval(UPDATE_DOCUMENT_DEFAULT_INTERVAL);
-   // m_updateDocumentTimer->setSingleShot(true);
-   // connect(m_updateDocumentTimer, SIGNAL(timeout()), this, SLOT(updateDocumentNow()));
+#endif
 }
 
 CEditorWidget::~CEditorWidget()
@@ -43,12 +42,14 @@ void CEditorWidget::setFontSettings(const TextEditor::FontSettings &fs)
 {
     TextEditor::BaseTextEditorWidget::setFontSettings(fs);
 
+#ifdef PYTHON_EDITOR__HIGHLIGHTER__INCLUDED
     CHighlighter *highlighter =
             qobject_cast<CHighlighter*>(baseTextDocument()->syntaxHighlighter());
     if (highlighter)
     {
         highlighter->SetFontSettings(fs);
     }
+#endif
 }
 
 TextEditor::BaseTextEditor* CEditorWidget::createEditor()
@@ -57,4 +58,3 @@ TextEditor::BaseTextEditor* CEditorWidget::createEditor()
 }
 
 } // PythonEditor
-} // Interval

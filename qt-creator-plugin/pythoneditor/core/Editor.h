@@ -4,12 +4,10 @@
 #include <texteditor/basetexteditor.h>
 
 namespace PythonEditor {
-namespace Internal {
 
 class CEditorWidget;
 
-class CEditor
-  : public TextEditor::BaseTextEditor
+class CEditor : public TextEditor::BaseTextEditor
 {
     Q_OBJECT
 
@@ -29,7 +27,6 @@ public:
                       const QString &realFileName);
 };
 
-} // Internal
 } // PythonEditor
 
 #endif // EDITABLE_H_3b9a2bb6_b26a_432e_889a_f108615aa584

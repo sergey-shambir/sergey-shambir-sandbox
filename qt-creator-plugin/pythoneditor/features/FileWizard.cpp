@@ -4,17 +4,33 @@
 
 // QtCreator platform & other plugins
 #include <utils/filewizarddialog.h>
+#include <texteditor/textfilewizard.h>
 
 // Self headers
 #include "../core/constants.h"
 #include "FileWizard.h"
 
-using namespace PythonEditor;
-using namespace PythonEditor::Internal;
 using namespace PythonEditor::Constants;
 
-CFileWizard::CFileWizard(const Parameters &params, QObject *parent)
-    :Core::BaseFileWizard(params, parent)
+namespace PythonEditor {
+
+static const Core::BaseFileWizardParameters GetDefaultParams()
+{
+    Core::BaseFileWizardParameters p(Core::IWizard::FileWizard);
+
+    p.setId(QLatin1String(C_WIZARD_ID_PYTHON));
+    p.setCategory(QLatin1String(C_WIZARD_CATEGORY_PYTHON));
+    p.setDisplayCategory(QLatin1String(C_DISPLAY_CATEGORY_PYTHON));
+    p.setDisplayName(
+                QObject::tr("Python script"));
+    p.setDescription(
+                QObject::tr("Creates an empty python script with utf-8 charset"));
+
+    return p;
+}
+
+CFileWizard::CFileWizard(QObject *parent)
+    :Core::BaseFileWizard(GetDefaultParams(), parent)
 {
 }
 
@@ -45,14 +61,17 @@ Core::GeneratedFiles CFileWizard::generateFiles(const QWizard *dialog,
 
     const Utils::FileWizardDialog* pWizard =
             qobject_cast<const Utils::FileWizardDialog*>(dialog);
-    QString path = pWizard->path();
+
+    QString folder = pWizard->path();
     QString name = pWizard->fileName();
 
     name = Core::BaseFileWizard::buildFileName(
-               path, name, QLatin1String(".py"));
+               folder, name, QLatin1String(".py"));
     Core::GeneratedFile file(name);
     file.setContents(QLatin1String(C_NEW_FILE_CONTENT));
     file.setAttributes(Core::GeneratedFile::OpenEditorAttribute);
 
     return (Core::GeneratedFiles() << file);
 }
+
+} // PythonEditor

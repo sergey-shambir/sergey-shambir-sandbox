@@ -2,12 +2,15 @@
 // Qt Library
 #include <QtCore/QString>
 #include <QtCore/QSet>
+#include <QtCore/QDebug>
 
+// Self headers
+#include "../core/constants.h"
 #include "Lexer.h"
 
+using namespace PythonEditor::Constants;
+
 namespace PythonEditor
-{
-namespace Internal
 {
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -15,55 +18,15 @@ namespace Internal
 
 static QSet<QString> InitKeywordsSet()
 {
-    const char* const KEYWORDS[] = {
-        "and",
-        "as",
-        "assert",
-        "break",
-        "class",
-        "continue",
-        "def",
-        "del",
-        "elif",
-        "else",
-        "except",
-        "exec",
-        "finally",
-        "for",
-        "from",
-        "global",
-        "if",
-        "import",
-        "in",
-        "is",
-        "lambda",
-        "not",
-        "or",
-        "pass",
-        "print",
-        "raise",
-        "return",
-        "tru",
-        "while",
-        "with",
-        "yield",
-        "None"
-    };
     QSet<QString> result;
-    size_t amount = (sizeof(KEYWORDS) / sizeof(const char* const));
+    size_t amount = (sizeof(C_PYTHON_KEYWORDS) / sizeof(const char* const));
     for (size_t index = 0; index < amount; ++index)
-        result.insert(KEYWORDS[index]);
+        result.insert(C_PYTHON_KEYWORDS[index]);
 
     return result;
 }
 
 static const QSet<QString> KEYWORDS_SET = InitKeywordsSet();
-
-enum State {
-    State_NORMAL,
-    State_COMMENT,
-    State_STRING_LITERAL
-};
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -71,7 +34,7 @@ CLexer::CLexer(const QChar *text, const size_t length)
     :m_text(text)
     ,m_length(length)
     ,m_readPos(0)
-    ,m_state(State_NORMAL)
+    ,m_state(0)
 {
 }
 
@@ -89,97 +52,161 @@ CToken CLexer::Read()
 {
     if (IsEOF())
     {
-        return CToken(Token_EOF_SYMBOL, m_readPos, 0);
+        return CToken(FormatedBlockEnd, m_readPos, 0);
     }
     QChar ch = GetChar();
 
-    if (ch == QLatin1Char('\n'))
-    {
-        return CToken(Token_NEWLINE, m_readPos - 1, 1);
-    }
-    if ((ch == QLatin1Char('\\'))
-             && !IsEOF() && (Peek() == QLatin1Char('\n')))
+    if (ch == '\n')
+        return CToken(Format_WHITESPACE, m_readPos - 1, 1);
+
+    if ((ch == '\\') && !IsEOF() && (Peek() == '\n'))
     {
         GetChar();
-        return CToken(Token_NEWLINE, m_readPos - 2, 2);
+        return CToken(Format_WHITESPACE, m_readPos - 2, 2);
     }
-    if (ch == QLatin1Char('\''))
-        return ReadStringLiteral();
+
+    if ((ch == '\'') || (ch == '\"'))
+        return ReadStringLiteral(ch);
+
     if (ch.isLetter())
         return ReadIdentifier();
+
     if (ch.isDigit())
         return ReadNumber();
-    if (ch == QLatin1Char('#'))
+
+    if (ch == '#')
+    {
+        if (!IsEOF() && (Peek() == '#'))
+        {
+            return ReadDoxygenComment();
+        }
         return ReadComment();
+    }
+
     if (ch.isSpace())
         return ReadWhiteSpace();
+
     return ReadOperator();
 }
 
-CToken CLexer::ReadStringLiteral()
+/**
+  Строковые литералы в Python обрамляются символами ' или "
+  */
+CToken CLexer::ReadStringLiteral(QChar quoteChar)
 {
-    size_t initialPos = m_readPos - 1;
-    QChar ch = m_text[m_readPos - 1];
-    while (!IsEOF() && (Peek() != ch))
+    const size_t initialPos = m_readPos - 1;
+    while (!IsEOF() && (Peek() != quoteChar))
     {
         GetChar();
     }
-    return CToken(Token_STRING, initialPos, m_readPos - initialPos);
+    GetChar();
+    return CToken(Format_STRING, initialPos, m_readPos - initialPos);
 }
 
+/**
+  Идентификатор начинается с <буквы> и продолжается замыканием символов
+  <буква или цифра>, причём <буква> - это символ английского алфавита
+  либо поджопник: '_'.
+  В Python есть 32 ключевых слова, они внесены в KEYWORDS_SET
+  */
 CToken CLexer::ReadIdentifier()
 {
-    size_t initialPos = m_readPos - 1;
-    while (!IsEOF() && (Peek().isLetterOrNumber()))
+    const size_t initialPos = m_readPos - 1;
+    while (!IsEOF() && (Peek().isLetterOrNumber() || (Peek() == '_')))
     {
         GetChar();
     }
     QString value(m_text + initialPos, m_readPos - initialPos);
-    if (KEYWORDS_SET.contains(value))
+
+    Format tkFormat = Format_IDENTIFIER;
+    if (value == QLatin1String("__init__") || value == QLatin1String("__del__"))
     {
-        return CToken(Token_KEYWORD, initialPos, m_readPos - initialPos);
+        tkFormat = Format_METHOD;
     }
-    return CToken(Token_IDENTIFIER, initialPos, m_readPos - initialPos);
+    else if (value == QLatin1String("self"))
+    {
+        tkFormat = Format_CLASS_FIELD;
+    }
+    else if (KEYWORDS_SET.contains(value))
+    {
+        tkFormat = Format_KEYWORD;
+    }
+    return CToken(tkFormat, initialPos, m_readPos - initialPos);
 }
 
+/**
+  Числа в специальных системах счисления имеют префиксы:
+  0o... и 0O... - восьмиричные
+  0x... и 0X... - шестнадцатиричные
+  0b... и 0B... - двоичные
+  остальные числа представлены в десятичной системе.
+  Суффиксы l и L также допустимы.
+
+  Числа с плавающей запятой:
+    floatnumber   ::=  pointfloat | exponentfloat
+    pointfloat    ::=  [intpart] fraction | intpart "."
+    exponentfloat ::=  (intpart | pointfloat) exponent
+    intpart       ::=  digit+
+    fraction      ::=  "." digit+
+    exponent      ::=  ("e" | "E") ["+" | "-"] digit+
+
+  Комплексные числа:
+    imagnumber ::=  (floatnumber | intpart) ("j" | "J")
+  */
 CToken CLexer::ReadNumber()
 {
-    size_t initialPos = m_readPos - 1;
+    const size_t initialPos = m_readPos - 1;
     while (!IsEOF() && (Peek().isDigit()))
     {
         GetChar();
     }
-    return CToken(Token_NUMBER, initialPos, m_readPos - initialPos);
+    return CToken(Format_NUMBER, initialPos, m_readPos - initialPos);
 }
 
+/**
+  Комментарии начинаются с символа # и бывают только однострочными
+  */
 CToken CLexer::ReadComment()
 {
-    size_t initialPos = m_readPos - 1;
-    while (!IsEOF() && (Peek() != QLatin1Char('\n')))
+    const size_t initialPos = m_readPos - 1;
+    while (!IsEOF() && (Peek() != QChar('\n')))
     {
         GetChar();
     }
-    return CToken(Token_COMMENT, initialPos, m_readPos - initialPos);
+    return CToken(Format_COMMENT, initialPos, m_readPos - initialPos);
+}
+
+/**
+  Однострочные комментарии Doxygen начинаются с ##
+  */
+CToken CLexer::ReadDoxygenComment()
+{
+    const size_t initialPos = m_readPos - 1;
+    while (!IsEOF() && (Peek() != QChar('\n')))
+    {
+        GetChar();
+    }
+    return CToken(Format_DOXYGEN_COMMENT, initialPos, m_readPos - initialPos);
 }
 
 CToken CLexer::ReadWhiteSpace()
 {
-    size_t initialPos = m_readPos - 1;
-    while (!IsEOF() && (Peek().isSpace()) && (Peek() != QLatin1Char('\n')))
+    const size_t initialPos = m_readPos - 1;
+    while (!IsEOF() && (Peek().isSpace()) && (Peek() != QChar('\n')))
     {
         GetChar();
     }
-    return CToken(Token_WHITESPACE, initialPos, m_readPos - initialPos);
+    return CToken(Format_WHITESPACE, initialPos, m_readPos - initialPos);
 }
 
 CToken CLexer::ReadOperator()
 {
-    size_t initialPos = m_readPos - 1;
-    while (!IsEOF() && (Peek().isPunct()))
+    const size_t initialPos = m_readPos - 1;
+    while (!IsEOF() && (Peek().isPunct()) && Peek() != '\'' && Peek() != '\"')
     {
         GetChar();
     }
-    return CToken(Token_OPERATOR, initialPos, m_readPos - initialPos);
+    return CToken(Format_OPERATOR, initialPos, m_readPos - initialPos);
 }
 
 bool CLexer::IsEOF() const
@@ -197,5 +224,4 @@ QChar CLexer::GetChar()
     return m_text[m_readPos++];
 }
 
-} // Internal
 } // PythonEditor

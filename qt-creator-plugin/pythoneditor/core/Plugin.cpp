@@ -13,16 +13,16 @@
 #include <extensionsystem/pluginmanager.h>
 #include <texteditor/texteditorconstants.h>
 #include <texteditor/texteditorsettings.h>
-#include <texteditor/textfilewizard.h>
 
 // Self headers
 #include "constants.h"
-#include "../features/FileWizard.h"
+#include "features.h"
 #include "EditorFactory.h"
 #include "Plugin.h"
 
-using namespace PythonEditor::Internal;
 using namespace PythonEditor::Constants;
+
+namespace PythonEditor {
 
 CPlugin* CPlugin::m_instance = 0;
 
@@ -45,7 +45,7 @@ bool CPlugin::initialize(
     Core::ICore* pCore = Core::ICore::instance();
 
     if (! pCore->mimeDatabase()->addMimeTypes(
-            QLatin1String(":/pythoneditor/pythoneditor.mimetypes.xml"),
+            QLatin1String(RC_PYTHON_MIME_XML),
             errorMessage))
     {
         return false;
@@ -60,23 +60,16 @@ bool CPlugin::initialize(
     Core::FileIconProvider *iconProv = Core::FileIconProvider::instance();
     Core::MimeDatabase *mimeDB = Core::ICore::instance()->mimeDatabase();
     iconProv->registerIconOverlayForMimeType(
-                  QIcon(QLatin1String(C_PYTHON_ICON)),
+                  QIcon(QLatin1String(RC_PYTHON_MIME_ICON)),
                   mimeDB->findByType(QLatin1String(C_PYTHON_MIMETYPE))
               );
 
     ////////////////////////////////////////////////////////////////////////////
     // Добавляем диалог создания файла
     ////////////////////////////////////////////////////////////////////////////
-    Core::BaseFileWizardParameters params(Core::IWizard::FileWizard);
-    params.setId(QLatin1String(C_WIZARD_ID_PYTHON));
-    params.setCategory(QLatin1String(C_WIZARD_CATEGORY_PYTHON));
-    params.setDisplayCategory(QLatin1String(C_DISPLAY_CATEGORY_PYTHON));
-    params.setDisplayName(QObject::tr("Python script"));
-    params.setIcon(QIcon(QLatin1String(C_PYTHON_ICON)));
-    params.setDescription
-        (QObject::tr("Creates an empty python script with utf-8 charset"));
-
-    addAutoReleasedObject(new CFileWizard(params, Core::ICore::instance()));
+#ifdef PYTHON_EDITOR__FILE_WIZARD__INCLUDED
+    addAutoReleasedObject(new CFileWizard(Core::ICore::instance()));
+#endif
 
     return true;
 }
@@ -84,4 +77,7 @@ void CPlugin::extensionsInitialized()
 {
 }
 
-Q_EXPORT_PLUGIN(PythonEditor::Internal::CPlugin)
+} // PythonEditor
+
+Q_EXPORT_PLUGIN(PythonEditor::CPlugin)
+
