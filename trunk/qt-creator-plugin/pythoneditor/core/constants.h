@@ -50,9 +50,7 @@ const char* const C_PYTHON_KEYWORDS[] = {
     "try",
     "while",
     "with",
-    "yield",
-    "None",
-    "self"
+    "yield"
 };
 
 /**
@@ -139,7 +137,10 @@ const char* const C_PYTHON_BUILTINS[] = {
     "chr",
     "ord",
     "len",
-    "abs"
+    "abs",
+    "None",
+    "True",
+    "False"
 };
 
 } // namespace Constants
