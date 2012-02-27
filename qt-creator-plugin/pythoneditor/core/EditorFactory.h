@@ -14,10 +14,25 @@ class CEditorFactory : public Core::IEditorFactory
 public:
     CEditorFactory(QObject* parent);
 
+    /**
+      Returns MIME types handled by editor
+      */
     virtual QStringList mimeTypes() const;
+
+    /**
+      Unique editor class identifier, see Constants::C_PYTHONEDITOR_ID
+      */
     virtual Core::Id id() const;
     virtual QString displayName() const;
+
+    /**
+      Opens file in new editor
+      */
     virtual Core::IFile *open(const QString &fileName);
+
+    /**
+      Creates and initializes new editor widget
+      */
     virtual Core::IEditor *createEditor(QWidget *parent);
 
 private:

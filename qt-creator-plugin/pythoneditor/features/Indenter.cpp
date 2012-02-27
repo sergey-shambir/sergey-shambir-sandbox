@@ -2,7 +2,7 @@
 // Qt Library
 #include <QtGui/QTextCursor>
 #include <QtGui/QTextDocument>
-#include <QtCore/QDebug>
+#include <QtCore/QSet>
 
 // QtCreator platform & other plugins
 #include <cpptools/cppcodeformatter.h>
@@ -16,6 +16,31 @@
 #include "Indenter.h"
 
 namespace PythonEditor {
+
+////////////////////////////////////////////////////////////////////////////////
+// Set of keywords those decrease indent level, example
+// def sum(a, b):
+//     return a + b
+// def another():
+//
+static QSet<QString> InitBackstepSet()
+{
+    static const char* const WORDS[] = {
+        "return",
+        "break",
+        "continue",
+        "raise"
+    };
+    size_t amount = sizeof(WORDS) / sizeof(const char* const);
+    QSet<QString> result;
+    for (size_t index = 0; index < amount; ++index)
+        result.insert(WORDS[index]);
+
+    return result;
+}
+
+static const QSet<QString> BACKSTEP_KEYWORDS_SET = InitBackstepSet();
+////////////////////////////////////////////////////////////////////////////////
 
 CIndenter::CIndenter()
 {
@@ -53,27 +78,32 @@ void CIndenter::indentBlock(QTextDocument *doc,
         while ((index > 0) && text[index].isSpace())
             --index;
 
+        ////////////////////////////////////////////////////////////////////////
+        // Increase intendation after colon, example
+        // class Employee:
+        //    def __init__(a):
+        //        l = 1
+        ////////////////////////////////////////////////////////////////////////
         if (text[index] == ':')
         {
-            indentDepth += 2;
+            indentDepth += INDENTATION_STEP;
         }
         else
         {
             CLexer lexer(text.constData(), text.length());
-            CToken tk;
-            do
+            CToken tk = lexer.Read();
+            while (tk.format() != FormatedBlockEnd)
             {
-                tk = lexer.Read();
                 if (tk.format() == Format_KEYWORD)
                 {
                     QString value = text.mid(tk.begin(), tk.length());
-                    if (value == "return")
+                    if (BACKSTEP_KEYWORDS_SET.contains(value))
                     {
-                        indentDepth = qMax(0, indentDepth - 2);
+                        indentDepth = qMax(0, indentDepth - INDENTATION_STEP);
                     }
                 }
+                tk = lexer.Read();
             }
-            while (tk.format() != FormatedBlockEnd);
         }
     }
     else

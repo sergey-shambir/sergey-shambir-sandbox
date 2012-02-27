@@ -16,6 +16,9 @@ const char C_PYTHON_MIMETYPE[] = "text/x-python";
 const char RC_PYTHON_MIME_XML[] = ":/pythoneditor/pythoneditor.mimetypes.xml";
 const char RC_PYTHON_MIME_ICON[] = ":/pythoneditor/images/text-x-python.png";
 
+/**
+  List of Python keywords, includes "None" and "self"
+  */
 const char* const C_PYTHON_KEYWORDS[] = {
     "and",
     "as",
@@ -44,11 +47,99 @@ const char* const C_PYTHON_KEYWORDS[] = {
     "print",
     "raise",
     "return",
-    "tru",
+    "try",
     "while",
     "with",
     "yield",
-    "None"
+    "None",
+    "self"
+};
+
+/**
+  List of Python magic methods
+  */
+const char* const C_PYTHON_MAGIC_METHODS[] = {
+    // ctor & dtor
+    "__init__",
+    "__del__",
+    // string conversion functions
+    "__str__",
+    "__repr__",
+    "__unicode__",
+    // attribute access functions
+    "__setattr__",
+    "__getattr__",
+    "__delattr__",
+    // binary operators
+    "__add__",
+    "__sub__",
+    "__mul__",
+    "__truediv__",
+    "__floordiv__",
+    "__mod__",
+    "__pow__",
+    "__and__",
+    "__or__",
+    "__xor__",
+    "__eq__",
+    "__ne__",
+    "__gt__",
+    "__lt__",
+    "__ge__",
+    "__le__",
+    "__lshift__",
+    "__rshift__",
+    "__contains__",
+    // unary operators
+    "__pos__",
+    "__neg__",
+    "__inv__",
+    "__abs__",
+    "__len__",
+    // item operators like []
+    "__getitem__",
+    "__setitem__",
+    "__delitem__",
+    "__getslice__",
+    "__setslice__",
+    "__delslice__",
+    // other functions
+    "__cmp__",
+    "__hash__",
+    "__nonzero__",
+    "__call__",
+    "__iter__",
+    "__reversed__",
+    "__divmod__",
+    "__int__",
+    "__long__",
+    "__float__",
+    "__complex__",
+    "__hex__",
+    "__oct__",
+    "__index__",
+    "__copy__",
+    "__deepcopy__",
+    "__sizeof__",
+    "__trunc__",
+    "__format__"
+};
+
+/**
+  List of python built-in functions
+  */
+const char* const C_PYTHON_BUILTINS[] = {
+    "range",
+    "xrange",
+    "int",
+    "float",
+    "long",
+    "hex",
+    "oct"
+    "chr",
+    "ord",
+    "len",
+    "abs"
 };
 
 } // namespace Constants

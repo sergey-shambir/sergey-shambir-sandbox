@@ -20,6 +20,10 @@ CEditorWidget::CEditorWidget(QWidget *parent)
     m_commentDefinition.setMultiLineEnd(QLatin1String("\"\"\""));
     m_commentDefinition.setSingleLine(QLatin1String("#"));
 
+    setParenthesesMatchingEnabled(true);
+    setMarksVisible(true);
+    setCodeFoldingSupported(true);
+
 #ifdef PYTHON_EDITOR__INDENTER__INCLUDED
     setIndenter(new CIndenter());
 #endif
@@ -47,7 +51,7 @@ void CEditorWidget::setFontSettings(const TextEditor::FontSettings &fs)
             qobject_cast<CHighlighter*>(baseTextDocument()->syntaxHighlighter());
     if (highlighter)
     {
-        highlighter->SetFontSettings(fs);
+        highlighter->setFontSettings(fs);
     }
 #endif
 }

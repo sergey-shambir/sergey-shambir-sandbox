@@ -17,6 +17,7 @@
 // Self headers
 #include "constants.h"
 #include "features.h"
+#include "EditorWidget.h"
 #include "EditorFactory.h"
 #include "Plugin.h"
 
@@ -27,6 +28,8 @@ namespace PythonEditor {
 CPlugin* CPlugin::m_instance = 0;
 
 CPlugin::CPlugin()
+    :m_factory(0)
+    ,m_actionHandler(0)
 {
     m_instance = this;
 }
@@ -34,6 +37,10 @@ CPlugin::CPlugin()
 CPlugin::~CPlugin()
 {
     removeObject(m_factory);
+    if (m_actionHandler)
+    {
+        delete m_actionHandler;
+    }
     m_instance = 0;
 }
 
@@ -55,7 +62,17 @@ bool CPlugin::initialize(
     addObject(m_factory);
 
     ////////////////////////////////////////////////////////////////////////////
-    // Добавляем MIME-иконки файлов
+    // Initialize editor actions handler
+    ////////////////////////////////////////////////////////////////////////////
+    m_actionHandler = new TextEditor::TextEditorActionHandler(
+                C_PYTHONEDITOR_ID,
+                TextEditor::TextEditorActionHandler::Format
+                | TextEditor::TextEditorActionHandler::UnCommentSelection
+                | TextEditor::TextEditorActionHandler::UnCollapseAll);
+    m_actionHandler->initializeActions();
+
+    ////////////////////////////////////////////////////////////////////////////
+    // Add MIME overlay icons (these icons displayed at Project dock panel)
     ////////////////////////////////////////////////////////////////////////////
     Core::FileIconProvider *iconProv = Core::FileIconProvider::instance();
     Core::MimeDatabase *mimeDB = Core::ICore::instance()->mimeDatabase();
@@ -65,7 +82,7 @@ bool CPlugin::initialize(
               );
 
     ////////////////////////////////////////////////////////////////////////////
-    // Добавляем диалог создания файла
+    // Add Python source file creation dialog
     ////////////////////////////////////////////////////////////////////////////
 #ifdef PYTHON_EDITOR__FILE_WIZARD__INCLUDED
     addAutoReleasedObject(new CFileWizard(Core::ICore::instance()));
@@ -73,8 +90,15 @@ bool CPlugin::initialize(
 
     return true;
 }
+
 void CPlugin::extensionsInitialized()
 {
+}
+
+void CPlugin::initializeEditor(CEditorWidget *widget)
+{
+    instance()->m_actionHandler->setupActions(widget);
+    TextEditor::TextEditorSettings::instance()->initializeEditor(widget);
 }
 
 } // PythonEditor

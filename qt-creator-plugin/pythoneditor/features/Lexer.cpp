@@ -14,19 +14,24 @@ namespace PythonEditor
 {
 
 ////////////////////////////////////////////////////////////////////////////////
-// Utility
+// Various word sets: keywords set, magic methods set
 
-static QSet<QString> InitKeywordsSet()
+static QSet<QString> InitWordsSet(const char* const words[], size_t amount)
 {
     QSet<QString> result;
-    size_t amount = (sizeof(C_PYTHON_KEYWORDS) / sizeof(const char* const));
     for (size_t index = 0; index < amount; ++index)
-        result.insert(C_PYTHON_KEYWORDS[index]);
+        result.insert(words[index]);
 
     return result;
 }
 
-static const QSet<QString> KEYWORDS_SET = InitKeywordsSet();
+#define INIT_SET(arr) InitWordsSet(arr, (sizeof(arr) / sizeof(const char* const)))
+
+static const QSet<QString> KEYWORDS_SET = INIT_SET(C_PYTHON_KEYWORDS);
+
+static const QSet<QString> MAGIC_METHODS_SET = INIT_SET(C_PYTHON_MAGIC_METHODS);
+
+static const QSet<QString> BUILTINS_SET = INIT_SET(C_PYTHON_BUILTINS);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -68,7 +73,7 @@ CToken CLexer::Read()
     if ((ch == '\'') || (ch == '\"'))
         return ReadStringLiteral(ch);
 
-    if (ch.isLetter())
+    if (ch.isLetter() || (ch == '_'))
         return ReadIdentifier();
 
     if (ch.isDigit())
@@ -119,13 +124,13 @@ CToken CLexer::ReadIdentifier()
     QString value(m_text + initialPos, m_readPos - initialPos);
 
     Format tkFormat = Format_IDENTIFIER;
-    if (value == QLatin1String("__init__") || value == QLatin1String("__del__"))
+    if (BUILTINS_SET.contains(value))
+    {
+        tkFormat = Format_TYPE;
+    }
+    if (MAGIC_METHODS_SET.contains(value))
     {
         tkFormat = Format_METHOD;
-    }
-    else if (value == QLatin1String("self"))
-    {
-        tkFormat = Format_CLASS_FIELD;
     }
     else if (KEYWORDS_SET.contains(value))
     {

@@ -6,10 +6,11 @@
   */
 
 #include <extensionsystem/iplugin.h>
+#include <texteditor/texteditoractionhandler.h>
 
 namespace PythonEditor {
 class CEditorFactory;
-class CTextEditorWidget;
+class CEditorWidget;
 }
 
 namespace PythonEditor {
@@ -56,9 +57,12 @@ public:
 
     static CPlugin *instance() { return m_instance; }
 
+    static void initializeEditor(CEditorWidget *widget);
+
 private:
     static CPlugin *m_instance;
     CEditorFactory* m_factory;
+    TextEditor::TextEditorActionHandler *m_actionHandler;
 };
 
 } // namespace PythonEditor

@@ -35,6 +35,8 @@ public:
                         const QTextCursor &cursor,
                         const QChar &typedChar,
                         const TextEditor::TabSettings &tabSettings);
+
+    static const int INDENTATION_STEP = 4;
 };
 
 }

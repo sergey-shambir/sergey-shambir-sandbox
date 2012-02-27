@@ -46,7 +46,7 @@ Core::IFile *CEditorFactory::open(const QString &fileName)
 Core::IEditor *CEditorFactory::createEditor(QWidget *parent)
 {
     CEditorWidget* widget = new CEditorWidget(parent);
-    TextEditor::TextEditorSettings::instance()->initializeEditor(widget);
+    CPlugin::initializeEditor(widget);
 
     return widget->editor();
 }
