@@ -12,7 +12,7 @@
 namespace PythonEditor {
 
 ////////////////////////////////////////////////////////////////////////////////
-// Список категорий форматов текста
+// List of available text highlighting formats
 QVector<QString> InitFormatCategories()
 {
     QVector<QString> categories(FormatsCount);
@@ -26,7 +26,7 @@ QVector<QString> InitFormatCategories()
     categories[Format_COMMENT] = TextEditor::Constants::C_COMMENT;
     categories[Format_DOXYGEN_COMMENT] = TextEditor::Constants::C_DOXYGEN_COMMENT;
     categories[Format_WHITESPACE] = TextEditor::Constants::C_VISUAL_WHITESPACE;
-    categories[Format_IDENTIFIER] = TextEditor::Constants::C_LOCAL;
+    categories[Format_IDENTIFIER] = TextEditor::Constants::C_TEXT;
 
     return categories;
 }
@@ -43,7 +43,7 @@ CHighlighter::~CHighlighter()
 {
 }
 
-void CHighlighter::SetFontSettings(const TextEditor::FontSettings &fs)
+void CHighlighter::setFontSettings(const TextEditor::FontSettings &fs)
 {
     m_formats = fs.toTextCharFormats(FORMAT_CATEGORIES);
     rehighlight();

@@ -7,6 +7,9 @@ namespace PythonEditor {
 
 class CEditorWidget;
 
+/**
+  Implements interface IEditor, makes possible to edit Python source
+  */
 class CEditor : public TextEditor::BaseTextEditor
 {
     Q_OBJECT
@@ -18,10 +21,16 @@ public:
     virtual bool duplicateSupported() const { return true; }
     virtual Core::IEditor* duplicate(QWidget *parent);
 
+    /**
+      Unique editor class identifier, see Constants::C_PYTHONEDITOR_ID
+      */
     virtual QString id() const;
     virtual bool isTemporary() const { return false; }
     virtual QString preferredModeType() const;
 
+    /**
+      Opens file for editing, actual work performed by base class
+      */
     virtual bool open(QString *errorString,
                       const QString &fileName,
                       const QString &realFileName);

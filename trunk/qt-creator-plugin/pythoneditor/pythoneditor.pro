@@ -1,5 +1,7 @@
 TEMPLATE = lib
 TARGET = PythonEditor
+#PROVIDER = Community
+
 include(../../qtcreatorplugin.pri)
 
 # dependencies
@@ -24,7 +26,8 @@ HEADERS += \
     core/features.h \
     features/Indenter.h
 
-OTHER_FILES += pythoneditor.pluginspec
+OTHER_FILES += pythoneditor.pluginspec \
+    pythoneditor.mimetypes.xml
 
 SOURCES += \
     core/Plugin.cpp \
@@ -40,6 +43,7 @@ RESOURCES += \
     resource.qrc
 
 FORMS +=
+
 
 
 

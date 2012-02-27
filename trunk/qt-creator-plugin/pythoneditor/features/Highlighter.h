@@ -2,8 +2,8 @@
 #define PYTHON_EDITOR__HIGHLIGHTER__INCLUDED
 
 /**
-  CHighlighter отвечает за подсветку синтаксиса языка Python.
-  Подсветка оперирует блоками, где каждый блок - одна строка исходного кода.
+  CHighlighter higlights Python syntax using simple lexical scanner.
+  Base class SyntaxHighlighter is specific for text-mode IEditor implementation.
   */
 
 #include <texteditor/syntaxhighlighter.h>
@@ -16,19 +16,22 @@ class CHighlighter : public TextEditor::SyntaxHighlighter
     Q_OBJECT
 
 public:
+    /**
+      Passes \b{*parent} in base class.
+      */
     explicit CHighlighter(TextEditor::BaseTextDocument *parent);
     virtual ~CHighlighter();
 
     /**
-      В QtCreator есть свои настройки подсветки, CHighlighter должен единожды
-      получить к ним доступ до первого использования highlightBlock();.
-      Этот метод вызывается из TextEditor::BaseTextEditorWidget::setFontSettings();
+      QtCreator has own fonts&color settings. CHighlighter wants get access to
+      this settings before highlightBlock() called first time.
+      Settings provided by CEditorWidget.
       */
-    void SetFontSettings(const TextEditor::FontSettings &fs);
+    void setFontSettings(const TextEditor::FontSettings &fs);
 
 protected:
     /**
-      Подсветка одной строки кода, переданной редактором
+      Highlights single line.
       */
     virtual void highlightBlock(const QString &text);
 

@@ -11,6 +11,7 @@
 
 // Self headers
 #include "constants.h"
+#include "Plugin.h"
 #include "EditorWidget.h"
 #include "Editor.h"
 
@@ -31,11 +32,11 @@ CEditor::~CEditor()
 
 Core::IEditor* CEditor::duplicate(QWidget *parent)
 {
-    CEditorWidget* pEditor = new CEditorWidget(parent);
-    pEditor->duplicateFrom(editorWidget());
-    TextEditor::TextEditorSettings::instance()->initializeEditor(pEditor);
+    CEditorWidget* widget = new CEditorWidget(parent);
+    widget->duplicateFrom(editorWidget());
+    CPlugin::initializeEditor(widget);
 
-    return pEditor->editor();
+    return widget->editor();
 }
 
 QString CEditor::id() const
