@@ -22,7 +22,7 @@ namespace PythonEditor {
 // def sum(a, b):
 //     return a + b
 // def another():
-//
+
 static QSet<QString> InitBackstepSet()
 {
     static const char* const WORDS[] = {
@@ -40,6 +40,7 @@ static QSet<QString> InitBackstepSet()
 }
 
 static const QSet<QString> BACKSTEP_KEYWORDS_SET = InitBackstepSet();
+
 ////////////////////////////////////////////////////////////////////////////////
 
 CIndenter::CIndenter()
@@ -70,8 +71,7 @@ void CIndenter::indentBlock(QTextDocument *doc,
 
     QTextBlock previous = block.previous();
     int indentDepth;
-    if (previous.isValid())
-    {
+    if (previous.isValid()) {
         QString text = previous.text();
         indentDepth = tabSettings.indentationColumn(text);
         size_t index = text.length() - 1;
@@ -84,30 +84,23 @@ void CIndenter::indentBlock(QTextDocument *doc,
         //    def __init__(a):
         //        l = 1
         ////////////////////////////////////////////////////////////////////////
-        if (text[index] == ':')
-        {
+        if (text[index] == ':') {
             indentDepth += INDENTATION_STEP;
-        }
-        else
-        {
+        } else {
             CLexer lexer(text.constData(), text.length());
-            CToken tk = lexer.Read();
-            while (tk.format() != FormatedBlockEnd)
-            {
-                if (tk.format() == Format_KEYWORD)
-                {
+            CToken tk = lexer.read();
+            while (tk.format() != FormatedBlockEnd) {
+                if (tk.format() == Format_KEYWORD) {
                     QString value = text.mid(tk.begin(), tk.length());
-                    if (BACKSTEP_KEYWORDS_SET.contains(value))
-                    {
+                    if (BACKSTEP_KEYWORDS_SET.contains(value)) {
                         indentDepth = qMax(0, indentDepth - INDENTATION_STEP);
+                        break;
                     }
                 }
-                tk = lexer.Read();
+                tk = lexer.read();
             }
         }
-    }
-    else
-    {
+    } else {
         indentDepth = 0;
     }
 
@@ -123,12 +116,9 @@ void CIndenter::indent(QTextDocument *doc,
                        const QChar &typedChar,
                        const TextEditor::TabSettings &tabSettings)
 {
-    if (!cursor.hasSelection())
-    {
+    if (!cursor.hasSelection()) {
         indentBlock(doc, cursor.block(), typedChar, tabSettings);
-    }
-    else
-    {
+    } else {
 #ifdef USE_CPP_ENGINE
         QTextBlock block = doc->findBlock(cursor.selectionStart());
         const QTextBlock end = doc->findBlock(cursor.selectionEnd()).next();
@@ -140,16 +130,14 @@ void CIndenter::indent(QTextDocument *doc,
 
         QTextCursor tc = cursor;
         tc.beginEditBlock();
-        do
-        {
+        do {
             int indent;
             int padding;
             codeFormatter.indentFor(block, &indent, &padding);
             tabSettings.indentLine(block, indent + padding, padding);
             codeFormatter.updateLineStateChange(block);
             block = block.next();
-        }
-        while (block.isValid() && block != end);
+        } while (block.isValid() && block != end);
         tc.endEditBlock();
 #endif
     }

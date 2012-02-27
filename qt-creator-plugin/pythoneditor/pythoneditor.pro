@@ -24,7 +24,9 @@ HEADERS += \
     features/Highlighter.h \
     features/Lexer.h \
     core/features.h \
-    features/Indenter.h
+    features/Indenter.h \
+    features/Token.h \
+    features/SourceStream.h
 
 OTHER_FILES += pythoneditor.pluginspec \
     pythoneditor.mimetypes.xml
@@ -43,6 +45,10 @@ RESOURCES += \
     resource.qrc
 
 FORMS +=
+
+
+
+
 
 
 

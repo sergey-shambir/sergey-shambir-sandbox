@@ -13,7 +13,7 @@ namespace PythonEditor {
 
 ////////////////////////////////////////////////////////////////////////////////
 // List of available text highlighting formats
-QVector<QString> InitFormatCategories()
+QVector<QString> initFormatCategories()
 {
     QVector<QString> categories(FormatsCount);
     categories[Format_NUMBER] = TextEditor::Constants::C_NUMBER;
@@ -31,7 +31,7 @@ QVector<QString> InitFormatCategories()
     return categories;
 }
 
-static const QVector<QString> FORMAT_CATEGORIES = InitFormatCategories();
+static const QVector<QString> FORMAT_CATEGORIES = initFormatCategories();
 ////////////////////////////////////////////////////////////////////////////////
 
 CHighlighter::CHighlighter(TextEditor::BaseTextDocument *parent)
@@ -58,17 +58,14 @@ void CHighlighter::highlightBlock(const QString &text)
     }
 
     CLexer lexer(text.constData(), text.size());
-    lexer.SetState(initialState);
+    lexer.setState(initialState);
 
-    for (;;)
+    CToken tk;
+    while ((tk = lexer.read()).format() != FormatedBlockEnd)
     {
-        CToken tk = lexer.Read();
-        if (tk.format() == FormatedBlockEnd)
-            break;
-
         setFormat(tk.begin(), tk.length(), m_formats[tk.format()]);
     }
-    setCurrentBlockState(lexer.GetState());
+    setCurrentBlockState(lexer.getState());
 }
 
 } // PythonEditor

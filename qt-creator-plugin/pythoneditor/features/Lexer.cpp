@@ -16,7 +16,7 @@ namespace PythonEditor
 ////////////////////////////////////////////////////////////////////////////////
 // Various word sets: keywords set, magic methods set
 
-static QSet<QString> InitWordsSet(const char* const words[], size_t amount)
+static QSet<QString> initWordsSet(const char* const words[], size_t amount)
 {
     QSet<QString> result;
     for (size_t index = 0; index < amount; ++index)
@@ -25,208 +25,266 @@ static QSet<QString> InitWordsSet(const char* const words[], size_t amount)
     return result;
 }
 
-#define INIT_SET(arr) InitWordsSet(arr, (sizeof(arr) / sizeof(const char* const)))
+#define INIT_SET(arr) initWordsSet(arr, (sizeof(arr) / sizeof(const char* const)))
 
 static const QSet<QString> KEYWORDS_SET = INIT_SET(C_PYTHON_KEYWORDS);
-
 static const QSet<QString> MAGIC_METHODS_SET = INIT_SET(C_PYTHON_MAGIC_METHODS);
-
 static const QSet<QString> BUILTINS_SET = INIT_SET(C_PYTHON_BUILTINS);
 
 ////////////////////////////////////////////////////////////////////////////////
 
 CLexer::CLexer(const QChar *text, const size_t length)
-    :m_text(text)
-    ,m_length(length)
-    ,m_readPos(0)
+    :m_src(text, length)
     ,m_state(0)
 {
 }
 
-void CLexer::SetState(int state)
+void CLexer::setState(int state)
 {
     m_state = state;
 }
 
-int CLexer::GetState() const
+int CLexer::getState() const
 {
     return m_state;
 }
 
-CToken CLexer::Read()
+CToken CLexer::read()
 {
-    if (IsEOF())
-    {
-        return CToken(FormatedBlockEnd, m_readPos, 0);
+    m_src.setAnchor();
+    if (m_src.isEnd()) {
+        return CToken(FormatedBlockEnd, m_src.anchor(), 0);
     }
-    QChar ch = GetChar();
+    QChar first = m_src.peek();
+    m_src.move();
 
-    if (ch == '\n')
-        return CToken(Format_WHITESPACE, m_readPos - 1, 1);
-
-    if ((ch == '\\') && !IsEOF() && (Peek() == '\n'))
-    {
-        GetChar();
-        return CToken(Format_WHITESPACE, m_readPos - 2, 2);
+    if ((first == '\\') && (m_src.peek() == '\n')) {
+        m_src.move();
+        return CToken(Format_WHITESPACE, m_src.anchor(), 2);
     }
 
-    if ((ch == '\'') || (ch == '\"'))
-        return ReadStringLiteral(ch);
+    //if ((first == '.') && peek().isDigit())
+    //    return readFloatNumber();
 
-    if (ch.isLetter() || (ch == '_'))
-        return ReadIdentifier();
+    if ((first == '\'') || (first == '\"'))
+        return readStringLiteral(first);
 
-    if (ch.isDigit())
-        return ReadNumber();
+    if (first.isLetter() || (first == '_'))
+        return readIdentifier();
 
-    if (ch == '#')
-    {
-        if (!IsEOF() && (Peek() == '#'))
-        {
-            return ReadDoxygenComment();
+    if (first.isDigit())
+        return readNumber();
+
+    if (first == '#') {
+        if (m_src.peek() == '#') {
+            return readDoxygenComment();
         }
-        return ReadComment();
+        return readComment();
     }
 
-    if (ch.isSpace())
-        return ReadWhiteSpace();
+    if (first.isSpace())
+        return readWhiteSpace();
 
-    return ReadOperator();
+    return readOperator();
 }
 
 /**
-  Строковые литералы в Python обрамляются символами ' или "
+  reads single-line string literal, surrounded by ' or " quotes
   */
-CToken CLexer::ReadStringLiteral(QChar quoteChar)
+CToken CLexer::readStringLiteral(QChar quoteChar)
 {
-    const size_t initialPos = m_readPos - 1;
-    while (!IsEOF() && (Peek() != quoteChar))
-    {
-        GetChar();
+    QChar ch = m_src.peek();
+    while ((ch != quoteChar) && !ch.isNull()) {
+        m_src.move();
+        ch = m_src.peek();
     }
-    GetChar();
-    return CToken(Format_STRING, initialPos, m_readPos - initialPos);
+    m_src.move();
+    return CToken(Format_STRING, m_src.anchor(), m_src.length());
 }
 
 /**
-  Идентификатор начинается с <буквы> и продолжается замыканием символов
-  <буква или цифра>, причём <буква> - это символ английского алфавита
-  либо поджопник: '_'.
-  В Python есть 32 ключевых слова, они внесены в KEYWORDS_SET
+  reads identifier and classifies it
   */
-CToken CLexer::ReadIdentifier()
+CToken CLexer::readIdentifier()
 {
-    const size_t initialPos = m_readPos - 1;
-    while (!IsEOF() && (Peek().isLetterOrNumber() || (Peek() == '_')))
-    {
-        GetChar();
+    QChar ch = m_src.peek();
+    while (ch.isLetterOrNumber() || (ch == '_')) {
+        m_src.move();
+        ch = m_src.peek();
     }
-    QString value(m_text + initialPos, m_readPos - initialPos);
+    QString value = m_src.value();
 
     Format tkFormat = Format_IDENTIFIER;
-    if (BUILTINS_SET.contains(value))
-    {
+    if (value == QLatin1String("self")) {
+        tkFormat = Format_CLASS_FIELD;
+    }
+    else if (BUILTINS_SET.contains(value)) {
         tkFormat = Format_TYPE;
     }
-    if (MAGIC_METHODS_SET.contains(value))
-    {
+    else if (MAGIC_METHODS_SET.contains(value)) {
         tkFormat = Format_METHOD;
     }
-    else if (KEYWORDS_SET.contains(value))
-    {
+    else if (KEYWORDS_SET.contains(value)) {
         tkFormat = Format_KEYWORD;
     }
-    return CToken(tkFormat, initialPos, m_readPos - initialPos);
+    return CToken(tkFormat, m_src.anchor(), m_src.length());
+}
+
+inline static bool isHexDigit(QChar ch)
+{
+    return (ch.isDigit()
+            || ((ch >= 'a' && ch <= 'f'))
+            || ((ch >= 'A') && (ch <= 'F')));
+}
+
+inline static bool isOctalDigit(QChar ch)
+{
+    return (ch.isDigit() && (ch != '8') && (ch != '9'));
+}
+
+inline static bool isBinaryDigit(QChar ch)
+{
+    return ((ch == '0') || (ch == '1'));
+}
+
+inline static bool isValidIntegerSuffix(QChar ch)
+{
+    return ((ch == 'l') || (ch == 'L'));
+}
+
+inline static bool isValidComplexSuffix(QChar ch)
+{
+    return ((ch == 'j') || (ch == 'J'));
+}
+
+CToken CLexer::readNumber()
+{
+    while (m_src.peek().isDigit()) {
+        m_src.move();
+    }
+    /*
+    if (!isEOF())
+    {
+        QChar ch = peek();
+        if (ch.toLower() == 'b') {
+            getChar();
+            while (isBinaryDigit(peek())) {
+                getChar();
+            }
+        }
+        if (ch.toLower() == 'o') {
+            getChar();
+            while (isOctalDigit(peek())) {
+                getChar();
+            }
+        }
+        if (ch.toLower() == 'x') {
+            getChar();
+            while (isHexDigit(peek())) {
+                getChar();
+            }
+        }
+        else {  // either integer or float number
+            getChar();
+            while (peek().isDigit()) {
+                getChar();
+            }
+            //return readFloatNumber();
+        }
+       // if (isValidIntegerSuffix(peek())) {
+        //    getChar();
+        //}
+    }
+    //*/
+    return CToken(Format_NUMBER, m_src.anchor(), m_src.length());
+}
+
+CToken CLexer::readFloatNumber() {
+    /*
+    enum {
+        State_INTEGER,
+        State_FRACTION,
+        State_EXPONENT
+    } state;
+    state = (m_text[initialPos] != '.') ? State_INTEGER : State_FRACTION;
+
+    for (;;)
+    {
+        if (isEOF())
+            break;
+        QChar ch = peek();
+        if (state == State_INTEGER) {
+            if (ch == '.') {
+                state = State_FRACTION;
+            } else if (!ch.isDigit())
+                break;
+        } else if (state == State_FRACTION) {
+            if ((ch == 'e') || (ch == 'E')) {
+                ch = peek(1);
+                if (ch == '-' || '+') {
+                    getChar();
+                    state = State_EXPONENT;
+                }
+            } else if (!ch.isDigit())
+                break;
+        } else {
+            if (!ch.isDigit())
+                break;
+        }
+        getChar();
+    }
+    */
+    return CToken(Format_NUMBER, m_src.anchor(), m_src.length());
 }
 
 /**
-  Числа в специальных системах счисления имеют префиксы:
-  0o... и 0O... - восьмиричные
-  0x... и 0X... - шестнадцатиричные
-  0b... и 0B... - двоичные
-  остальные числа представлены в десятичной системе.
-  Суффиксы l и L также допустимы.
-
-  Числа с плавающей запятой:
-    floatnumber   ::=  pointfloat | exponentfloat
-    pointfloat    ::=  [intpart] fraction | intpart "."
-    exponentfloat ::=  (intpart | pointfloat) exponent
-    intpart       ::=  digit+
-    fraction      ::=  "." digit+
-    exponent      ::=  ("e" | "E") ["+" | "-"] digit+
-
-  Комплексные числа:
-    imagnumber ::=  (floatnumber | intpart) ("j" | "J")
+  reads single-line python comment, started with "#"
   */
-CToken CLexer::ReadNumber()
+CToken CLexer::readComment()
 {
-    const size_t initialPos = m_readPos - 1;
-    while (!IsEOF() && (Peek().isDigit()))
-    {
-        GetChar();
+    QChar ch = m_src.peek();
+    while ((ch != '\n') && !ch.isNull()) {
+        m_src.move();
+        ch = m_src.peek();
     }
-    return CToken(Format_NUMBER, initialPos, m_readPos - initialPos);
+    return CToken(Format_COMMENT, m_src.anchor(), m_src.length());
 }
 
 /**
-  Комментарии начинаются с символа # и бывают только однострочными
+  reads single-line python doxygen comment, started with "##"
   */
-CToken CLexer::ReadComment()
+CToken CLexer::readDoxygenComment()
 {
-    const size_t initialPos = m_readPos - 1;
-    while (!IsEOF() && (Peek() != QChar('\n')))
-    {
-        GetChar();
+    QChar ch = m_src.peek();
+    while ((ch != '\n') && !ch.isNull()) {
+        m_src.move();
+        ch = m_src.peek();
     }
-    return CToken(Format_COMMENT, initialPos, m_readPos - initialPos);
+    return CToken(Format_DOXYGEN_COMMENT, m_src.anchor(), m_src.length());
 }
 
 /**
-  Однострочные комментарии Doxygen начинаются с ##
+  reads whitespace
   */
-CToken CLexer::ReadDoxygenComment()
+CToken CLexer::readWhiteSpace()
 {
-    const size_t initialPos = m_readPos - 1;
-    while (!IsEOF() && (Peek() != QChar('\n')))
-    {
-        GetChar();
+    while (m_src.peek().isSpace()) {
+        m_src.move();
     }
-    return CToken(Format_DOXYGEN_COMMENT, initialPos, m_readPos - initialPos);
+    return CToken(Format_WHITESPACE, m_src.anchor(), m_src.length());
 }
 
-CToken CLexer::ReadWhiteSpace()
+/**
+  reads punctuation symbols, excluding quotes (' and ")
+  */
+CToken CLexer::readOperator()
 {
-    const size_t initialPos = m_readPos - 1;
-    while (!IsEOF() && (Peek().isSpace()) && (Peek() != QChar('\n')))
-    {
-        GetChar();
+    QChar ch = m_src.peek();
+    while (ch.isPunct() && (ch != '\'') && (ch != '\"')) {
+        m_src.move();
+        ch = m_src.peek();
     }
-    return CToken(Format_WHITESPACE, initialPos, m_readPos - initialPos);
-}
-
-CToken CLexer::ReadOperator()
-{
-    const size_t initialPos = m_readPos - 1;
-    while (!IsEOF() && (Peek().isPunct()) && Peek() != '\'' && Peek() != '\"')
-    {
-        GetChar();
-    }
-    return CToken(Format_OPERATOR, initialPos, m_readPos - initialPos);
-}
-
-bool CLexer::IsEOF() const
-{
-    return (m_readPos >= m_length);
-}
-
-QChar CLexer::Peek() const
-{
-    return m_text[m_readPos];
-}
-
-QChar CLexer::GetChar()
-{
-    return m_text[m_readPos++];
+    return CToken(Format_OPERATOR, m_src.anchor(), m_src.length());
 }
 
 } // PythonEditor
