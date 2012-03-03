@@ -18,27 +18,27 @@ static const Core::BaseFileWizardParameters GetDefaultParams()
 {
     Core::BaseFileWizardParameters p(Core::IWizard::FileWizard);
 
-    p.setId(QLatin1String(C_WIZARD_ID_PYTHON));
-    p.setCategory(QLatin1String(C_WIZARD_CATEGORY_PYTHON));
-    p.setDisplayCategory(QLatin1String(C_DISPLAY_CATEGORY_PYTHON));
+    p.setId(QLatin1String(C_PY_SOURCE_WIZARD_ID));
+    p.setCategory(QLatin1String(C_PY_WIZARD_CATEGORY));
+    p.setDisplayCategory(QLatin1String(C_PY_DISPLAY_CATEGORY));
     p.setDisplayName(
-                QObject::tr("Python script"));
+                QObject::tr(EN_PY_SOURCE_DISPLAY_NAME));
     p.setDescription(
-                QObject::tr("Creates an empty python script with utf-8 charset"));
+                QObject::tr(EN_PY_SOURCE_DESCRIPTION));
 
     return p;
 }
 
-CFileWizard::CFileWizard(QObject *parent)
+FileWizard::FileWizard(QObject *parent)
     :Core::BaseFileWizard(GetDefaultParams(), parent)
 {
 }
 
-CFileWizard::~CFileWizard()
+FileWizard::~FileWizard()
 {
 }
 
-QWizard* CFileWizard::createWizardDialog(QWidget *parent,
+QWizard* FileWizard::createWizardDialog(QWidget *parent,
                                          const QString &defaultPath,
                                          const WizardPageList &extensionPages) const
 {
@@ -54,7 +54,7 @@ QWizard* CFileWizard::createWizardDialog(QWidget *parent,
     return pDialog;
 }
 
-Core::GeneratedFiles CFileWizard::generateFiles(const QWizard *dialog,
+Core::GeneratedFiles FileWizard::generateFiles(const QWizard *dialog,
                                                 QString *errorMessage) const
 {
     Q_UNUSED(errorMessage)
@@ -68,7 +68,7 @@ Core::GeneratedFiles CFileWizard::generateFiles(const QWizard *dialog,
     name = Core::BaseFileWizard::buildFileName(
                folder, name, QLatin1String(".py"));
     Core::GeneratedFile file(name);
-    file.setContents(QLatin1String(C_NEW_FILE_CONTENT));
+    file.setContents(QLatin1String(C_PY_SOURCE_CONTENT));
     file.setAttributes(Core::GeneratedFile::OpenEditorAttribute);
 
     return (Core::GeneratedFiles() << file);

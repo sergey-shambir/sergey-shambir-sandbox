@@ -6,24 +6,26 @@
 
 namespace PythonEditor {
 
-class CLexer
+class Lexer
 {
 public:
-    CLexer(const QChar* text, const size_t length);
+    Lexer(const QChar* text, const size_t length);
 
     void setState(int state);
     int getState() const;
-    CToken read();
+    Token read();
+    QString value(const Token& tk) const;
 
 private:
-    CToken readStringLiteral(QChar quoteChar);
-    CToken readIdentifier();
-    CToken readNumber();
-    CToken readFloatNumber();
-    CToken readComment();
-    CToken readDoxygenComment();
-    CToken readWhiteSpace();
-    CToken readOperator();
+    Token readStringLiteral(QChar quoteChar);
+    Token readMultiLineStringLiteral();
+    Token readIdentifier();
+    Token readNumber();
+    Token readFloatNumber();
+    Token readComment();
+    Token readDoxygenComment();
+    Token readWhiteSpace();
+    Token readOperator();
 
     SourceStream m_src;
     int m_state;

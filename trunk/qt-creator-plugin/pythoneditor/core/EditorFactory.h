@@ -7,12 +7,12 @@
 
 namespace PythonEditor {
 
-class CEditorFactory : public Core::IEditorFactory
+class EditorFactory : public Core::IEditorFactory
 {
     Q_OBJECT
 
 public:
-    CEditorFactory(QObject* parent);
+    EditorFactory(QObject* parent);
 
     /**
       Returns MIME types handled by editor

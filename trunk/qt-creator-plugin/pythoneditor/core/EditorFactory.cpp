@@ -17,23 +17,23 @@ using namespace PythonEditor::Constants;
 
 namespace PythonEditor {
 
-CEditorFactory::CEditorFactory(QObject *parent)
+EditorFactory::EditorFactory(QObject *parent)
     : Core::IEditorFactory(parent)
 {
-    m_mimeTypes << QLatin1String(C_PYTHON_MIMETYPE);
+    m_mimeTypes << QLatin1String(C_PY_MIMETYPE);
 }
 
-Core::Id CEditorFactory::id() const
+Core::Id EditorFactory::id() const
 {
     return C_PYTHONEDITOR_ID;
 }
 
-QString CEditorFactory::displayName() const
+QString EditorFactory::displayName() const
 {
     return "stub for CEditorFactory::displayName()";
 }
 
-Core::IFile *CEditorFactory::open(const QString &fileName)
+Core::IFile *EditorFactory::open(const QString &fileName)
 {
     Core::IEditor *iface = Core::EditorManager::instance()->openEditor(fileName, id());
     if (!iface) {
@@ -43,15 +43,15 @@ Core::IFile *CEditorFactory::open(const QString &fileName)
     return iface->file();
 }
 
-Core::IEditor *CEditorFactory::createEditor(QWidget *parent)
+Core::IEditor *EditorFactory::createEditor(QWidget *parent)
 {
-    CEditorWidget* widget = new CEditorWidget(parent);
-    CPlugin::initializeEditor(widget);
+    EditorWidget* widget = new EditorWidget(parent);
+    Plugin::initializeEditor(widget);
 
     return widget->editor();
 }
 
-QStringList CEditorFactory::mimeTypes() const
+QStringList EditorFactory::mimeTypes() const
 {
     return m_mimeTypes;
 }

@@ -29,7 +29,8 @@ HEADERS += \
     features/SourceStream.h
 
 OTHER_FILES += pythoneditor.pluginspec \
-    pythoneditor.mimetypes.xml
+    pythoneditor.mimetypes.xml \
+    KNOWN_ISSUES.txt
 
 SOURCES += \
     core/Plugin.cpp \
@@ -45,6 +46,7 @@ RESOURCES += \
     resource.qrc
 
 FORMS +=
+
 
 
 

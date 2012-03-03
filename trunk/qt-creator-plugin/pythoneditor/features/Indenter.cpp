@@ -1,8 +1,7 @@
 
-// Qt Library
-#include <QtGui/QTextCursor>
-#include <QtGui/QTextDocument>
-#include <QtCore/QSet>
+// Self headers
+#include "Lexer.h"
+#include "Indenter.h"
 
 // QtCreator platform & other plugins
 #include <cpptools/cppcodeformatter.h>
@@ -11,9 +10,11 @@
 #include <texteditor/basetextdocumentlayout.h>
 #include <texteditor/tabsettings.h>
 
-// Self headers
-#include "Lexer.h"
-#include "Indenter.h"
+// Qt Library
+#include <QtGui/QTextCursor>
+#include <QtGui/QTextDocument>
+#include <QtCore/QSet>
+#include <QtCore/QDebug>
 
 namespace PythonEditor {
 
@@ -43,25 +44,31 @@ static const QSet<QString> BACKSTEP_KEYWORDS_SET = InitBackstepSet();
 
 ////////////////////////////////////////////////////////////////////////////////
 
-CIndenter::CIndenter()
+Indenter::Indenter()
 {
 }
 
-CIndenter::~CIndenter()
+Indenter::~Indenter()
 {
 }
 
-bool CIndenter::isElectricCharacter(const QChar &ch) const
+////////////////////////////////////////////////////////////////////////
+// Increase intendation after colon, example
+// class Employee:
+//    def __init__(a):
+//        name = a
+////////////////////////////////////////////////////////////////////////
+bool Indenter::isElectricCharacter(const QChar &ch) const
 {
     return (ch == ':');
 }
 
 /**
-  Выравнивание блока кода. Под блоком обычно подразумевается одна строка.
-  \todo следует выделить класс CodeFormater, возможно,
-        по образу и подобию CppTools::QtStyleCodeFormatter
+  пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ. пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ.
+  \todo пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ CodeFormater, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ,
+        пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ CppTools::QtStyleCodeFormatter
   */
-void CIndenter::indentBlock(QTextDocument *doc,
+void Indenter::indentBlock(QTextDocument *doc,
                             const QTextBlock &block,
                             const QChar &typedChar,
                             const TextEditor::TabSettings &tabSettings)
@@ -69,78 +76,45 @@ void CIndenter::indentBlock(QTextDocument *doc,
     Q_UNUSED(doc)
     Q_UNUSED(typedChar)
 
-    QTextBlock previous = block.previous();
-    int indentDepth;
-    if (previous.isValid()) {
-        QString text = previous.text();
-        indentDepth = tabSettings.indentationColumn(text);
-        size_t index = text.length() - 1;
-        while ((index > 0) && text[index].isSpace())
-            --index;
+    QTextBlock prevBlock = block.previous();
+    if (prevBlock.isValid()) {
+        const int TAB_SIZE = tabSettings.m_tabSize;
+        QString prevLine = prevBlock.text();
+        int indentation = tabSettings.indentationColumn(prevLine);
 
-        ////////////////////////////////////////////////////////////////////////
-        // Increase intendation after colon, example
-        // class Employee:
-        //    def __init__(a):
-        //        l = 1
-        ////////////////////////////////////////////////////////////////////////
-        if (text[index] == ':') {
-            indentDepth += INDENTATION_STEP;
+        if (isElectricLine(prevLine)) {
+            indentation += TAB_SIZE;
         } else {
-            CLexer lexer(text.constData(), text.length());
-            CToken tk = lexer.read();
-            while (tk.format() != FormatedBlockEnd) {
+            Lexer lexer(prevLine.constData(), prevLine.length());
+            for (;;)
+            {
+                Token tk = lexer.read();
+                if (tk.format() == FormatedBlockEnd) {
+                    break;
+                }
                 if (tk.format() == Format_KEYWORD) {
-                    QString value = text.mid(tk.begin(), tk.length());
+                    QString value = lexer.value(tk);
                     if (BACKSTEP_KEYWORDS_SET.contains(value)) {
-                        indentDepth = qMax(0, indentDepth - INDENTATION_STEP);
+                        indentation = qMax<int>(0, indentation - TAB_SIZE);
                         break;
                     }
                 }
-                tk = lexer.read();
             }
         }
+        tabSettings.indentLine(block, indentation);
     } else {
-        indentDepth = 0;
+        // First line in whole document
+        tabSettings.indentLine(block, 0);
     }
-
-    tabSettings.indentLine(block, indentDepth);
 }
 
-/**
-  Выравнивание кода по заданному положению курсора.
-  \todo добавить обработку ветки if (cursor.hasSelection())
- */
-void CIndenter::indent(QTextDocument *doc,
-                       const QTextCursor &cursor,
-                       const QChar &typedChar,
-                       const TextEditor::TabSettings &tabSettings)
+bool Indenter::isElectricLine(const QString &line) const
 {
-    if (!cursor.hasSelection()) {
-        indentBlock(doc, cursor.block(), typedChar, tabSettings);
-    } else {
-#ifdef USE_CPP_ENGINE
-        QTextBlock block = doc->findBlock(cursor.selectionStart());
-        const QTextBlock end = doc->findBlock(cursor.selectionEnd()).next();
-
-        // TODO: do something with it
-        CppTools::QtStyleCodeFormatter codeFormatter(tabSettings,
-                  CppTools::CppToolsSettings::instance()->cppCodeStyle()->codeStyleSettings());
-        codeFormatter.updateStateUntil(block);
-
-        QTextCursor tc = cursor;
-        tc.beginEditBlock();
-        do {
-            int indent;
-            int padding;
-            codeFormatter.indentFor(block, &indent, &padding);
-            tabSettings.indentLine(block, indent + padding, padding);
-            codeFormatter.updateLineStateChange(block);
-            block = block.next();
-        } while (block.isValid() && block != end);
-        tc.endEditBlock();
-#endif
+    size_t index = line.length() - 1;
+    while ((index > 0) && line[index].isSpace()) {
+        --index;
     }
+    return (isElectricCharacter(line[index]));
 }
 
 } // PythonEditor

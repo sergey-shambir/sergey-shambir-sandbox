@@ -8,8 +8,7 @@ namespace PythonEditor {
 /**
   CFileWizard добавляет мастер создания файлов для скриптов Python
   */
-class CFileWizard
-  : public Core::BaseFileWizard
+class FileWizard : public Core::BaseFileWizard
 {
     Q_OBJECT
 
@@ -17,8 +16,8 @@ public:
     /**
       Инициализация, добавление пункта в диалоге создания файла/проекта
       */
-    explicit CFileWizard(QObject* parent = 0);
-    virtual ~CFileWizard();
+    explicit FileWizard(QObject* parent = 0);
+    virtual ~FileWizard();
 
 protected:
     /**

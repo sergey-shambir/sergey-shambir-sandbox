@@ -9,13 +9,13 @@
 #include <texteditor/texteditoractionhandler.h>
 
 namespace PythonEditor {
-class CEditorFactory;
-class CEditorWidget;
+class EditorFactory;
+class EditorWidget;
 }
 
 namespace PythonEditor {
 
-class CPlugin
+class Plugin
   : public ExtensionSystem::IPlugin
 {
     Q_OBJECT
@@ -26,13 +26,13 @@ public:
       не заняты ничем, кроме инициализации членов класса. Основная работа
       выполняется позже, в методах initialize() и extensionsInitialized()
       */
-    CPlugin();
+    Plugin();
 
     /**
       Плагины отвечают за удаление объектов их кучи и прекращение их регистрации
       в менеджере плагинов
       */
-    virtual ~CPlugin();
+    virtual ~Plugin();
 
     /**
       Инициализирует плагин, возвращает true в случае успеха.
@@ -55,13 +55,13 @@ public:
       */
     virtual void extensionsInitialized();
 
-    static CPlugin *instance() { return m_instance; }
+    static Plugin *instance() { return m_instance; }
 
-    static void initializeEditor(CEditorWidget *widget);
+    static void initializeEditor(EditorWidget *widget);
 
 private:
-    static CPlugin *m_instance;
-    CEditorFactory* m_factory;
+    static Plugin *m_instance;
+    EditorFactory* m_factory;
     TextEditor::TextEditorActionHandler *m_actionHandler;
 };
 

@@ -13,7 +13,7 @@
 
 namespace PythonEditor {
 
-CEditorWidget::CEditorWidget(QWidget *parent)
+EditorWidget::EditorWidget(QWidget *parent)
     :TextEditor::BaseTextEditorWidget(parent)
 {
     m_commentDefinition.setMultiLineStart(QLatin1String("\"\"\""));
@@ -25,30 +25,30 @@ CEditorWidget::CEditorWidget(QWidget *parent)
     setCodeFoldingSupported(true);
 
 #ifdef PYTHON_EDITOR__INDENTER__INCLUDED
-    setIndenter(new CIndenter());
+    setIndenter(new Indenter());
 #endif
 
 #ifdef PYTHON_EDITOR__HIGHLIGHTER__INCLUDED
-    new CHighlighter(baseTextDocument());
+    new Highlighter(baseTextDocument());
 #endif
 }
 
-CEditorWidget::~CEditorWidget()
+EditorWidget::~EditorWidget()
 {
 }
 
-void CEditorWidget::unCommentSelection()
+void EditorWidget::unCommentSelection()
 {
     Utils::unCommentSelection(this, m_commentDefinition);
 }
 
-void CEditorWidget::setFontSettings(const TextEditor::FontSettings &fs)
+void EditorWidget::setFontSettings(const TextEditor::FontSettings &fs)
 {
     TextEditor::BaseTextEditorWidget::setFontSettings(fs);
 
 #ifdef PYTHON_EDITOR__HIGHLIGHTER__INCLUDED
-    CHighlighter *highlighter =
-            qobject_cast<CHighlighter*>(baseTextDocument()->syntaxHighlighter());
+    Highlighter *highlighter =
+            qobject_cast<Highlighter*>(baseTextDocument()->syntaxHighlighter());
     if (highlighter)
     {
         highlighter->setFontSettings(fs);
@@ -56,9 +56,9 @@ void CEditorWidget::setFontSettings(const TextEditor::FontSettings &fs)
 #endif
 }
 
-TextEditor::BaseTextEditor* CEditorWidget::createEditor()
+TextEditor::BaseTextEditor* EditorWidget::createEditor()
 {
-    return new CEditor(this);
+    return new Editor(this);
 }
 
 } // PythonEditor
