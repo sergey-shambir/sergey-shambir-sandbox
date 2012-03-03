@@ -9,11 +9,11 @@
 
 namespace PythonEditor {
 
-class CIndenter : public TextEditor::Indenter
+class Indenter : public TextEditor::Indenter
 {
 public:
-    CIndenter();
-    virtual ~CIndenter();
+    Indenter();
+    virtual ~Indenter();
 
     /**
       Вызывает ли символ увеличение уровня отступа? (как "{" в языке C++)
@@ -28,15 +28,8 @@ public:
                              const QChar &typedChar,
                              const TextEditor::TabSettings &tabSettings);
 
-    /**
-      Выравнивание кода по заданному положению курсора.
-      */
-    virtual void indent(QTextDocument *doc,
-                        const QTextCursor &cursor,
-                        const QChar &typedChar,
-                        const TextEditor::TabSettings &tabSettings);
-
-    static const int INDENTATION_STEP = 4;
+private:
+    bool isElectricLine(const QString &ch) const;
 };
 
 }

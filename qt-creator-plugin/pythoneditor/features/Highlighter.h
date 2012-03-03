@@ -11,7 +11,7 @@
 
 namespace PythonEditor {
 
-class CHighlighter : public TextEditor::SyntaxHighlighter
+class Highlighter : public TextEditor::SyntaxHighlighter
 {
     Q_OBJECT
 
@@ -19,8 +19,8 @@ public:
     /**
       Passes \b{*parent} in base class.
       */
-    explicit CHighlighter(TextEditor::BaseTextDocument *parent);
-    virtual ~CHighlighter();
+    explicit Highlighter(TextEditor::BaseTextDocument *parent);
+    virtual ~Highlighter();
 
     /**
       QtCreator has own fonts&color settings. CHighlighter wants get access to

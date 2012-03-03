@@ -25,16 +25,16 @@ using namespace PythonEditor::Constants;
 
 namespace PythonEditor {
 
-CPlugin* CPlugin::m_instance = 0;
+Plugin* Plugin::m_instance = 0;
 
-CPlugin::CPlugin()
+Plugin::Plugin()
     :m_factory(0)
     ,m_actionHandler(0)
 {
     m_instance = this;
 }
 
-CPlugin::~CPlugin()
+Plugin::~Plugin()
 {
     removeObject(m_factory);
     if (m_actionHandler)
@@ -44,7 +44,7 @@ CPlugin::~CPlugin()
     m_instance = 0;
 }
 
-bool CPlugin::initialize(
+bool Plugin::initialize(
         const QStringList &arguments, QString *errorMessage)
 {
     Q_UNUSED(arguments)
@@ -52,13 +52,13 @@ bool CPlugin::initialize(
     Core::ICore* pCore = Core::ICore::instance();
 
     if (! pCore->mimeDatabase()->addMimeTypes(
-            QLatin1String(RC_PYTHON_MIME_XML),
+            QLatin1String(RC_PY_MIME_XML),
             errorMessage))
     {
         return false;
     }
 
-    m_factory = new CEditorFactory(this);
+    m_factory = new EditorFactory(this);
     addObject(m_factory);
 
     ////////////////////////////////////////////////////////////////////////////
@@ -77,25 +77,25 @@ bool CPlugin::initialize(
     Core::FileIconProvider *iconProv = Core::FileIconProvider::instance();
     Core::MimeDatabase *mimeDB = Core::ICore::instance()->mimeDatabase();
     iconProv->registerIconOverlayForMimeType(
-                  QIcon(QLatin1String(RC_PYTHON_MIME_ICON)),
-                  mimeDB->findByType(QLatin1String(C_PYTHON_MIMETYPE))
+                  QIcon(QLatin1String(RC_PY_MIME_ICON)),
+                  mimeDB->findByType(QLatin1String(C_PY_MIMETYPE))
               );
 
     ////////////////////////////////////////////////////////////////////////////
     // Add Python source file creation dialog
     ////////////////////////////////////////////////////////////////////////////
 #ifdef PYTHON_EDITOR__FILE_WIZARD__INCLUDED
-    addAutoReleasedObject(new CFileWizard(Core::ICore::instance()));
+    addAutoReleasedObject(new FileWizard(Core::ICore::instance()));
 #endif
 
     return true;
 }
 
-void CPlugin::extensionsInitialized()
+void Plugin::extensionsInitialized()
 {
 }
 
-void CPlugin::initializeEditor(CEditorWidget *widget)
+void Plugin::initializeEditor(EditorWidget *widget)
 {
     instance()->m_actionHandler->setupActions(widget);
     TextEditor::TextEditorSettings::instance()->initializeEditor(widget);
@@ -103,5 +103,5 @@ void CPlugin::initializeEditor(CEditorWidget *widget)
 
 } // PythonEditor
 
-Q_EXPORT_PLUGIN(PythonEditor::CPlugin)
+Q_EXPORT_PLUGIN(PythonEditor::Plugin)
 

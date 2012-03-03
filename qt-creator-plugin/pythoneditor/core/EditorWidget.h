@@ -6,14 +6,20 @@
 
 namespace PythonEditor {
 
-class CEditorWidget : public TextEditor::BaseTextEditorWidget
+/**
+  Parent widget for PythonEditor::Editor class
+  */
+class EditorWidget : public TextEditor::BaseTextEditorWidget
 {
     Q_OBJECT
 
 public:
-    CEditorWidget(QWidget *parent = 0);
-    virtual ~CEditorWidget();
+    EditorWidget(QWidget *parent = 0);
+    virtual ~EditorWidget();
 
+    /**
+      Comments or uncomments selection using Python commenting syntax
+      */
     virtual void unCommentSelection();
 
 public slots:

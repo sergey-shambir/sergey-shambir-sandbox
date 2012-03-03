@@ -5,21 +5,34 @@ namespace PythonEditor {
 namespace Constants {
 
 const char C_PYTHONEDITOR_ID[] = "PythonEditor.PythonEditor";
-const char C_NEW_FILE_CONTENT[] =
+
+// File/Project creation wizard
+const char C_PY_WIZARD_CATEGORY[] = "U.Python";
+const char C_PY_EXTENSION[] = ".py";
+const char C_PY_DISPLAY_CATEGORY[] = "Python";
+
+const char C_PY_SOURCE_WIZARD_ID[] = "F.PySource";
+const char C_PY_SOURCE_CONTENT[] =
         "#!/usr/bin/env python\n"
         "# -*- coding: utf-8 -*-\n";
+const char EN_PY_SOURCE_DISPLAY_NAME[] = "Python source file";
+const char EN_PY_SOURCE_DESCRIPTION[] =
+        "Creates an empty python script with utf-8 charset";
 
-const char C_WIZARD_CATEGORY_PYTHON[] = "U.Python";
-const char C_DISPLAY_CATEGORY_PYTHON[] = "Python";
-const char C_WIZARD_ID_PYTHON[] = "F.Python";
-const char C_PYTHON_MIMETYPE[] = "text/x-python";
-const char RC_PYTHON_MIME_XML[] = ":/pythoneditor/pythoneditor.mimetypes.xml";
-const char RC_PYTHON_MIME_ICON[] = ":/pythoneditor/images/text-x-python.png";
+const char C_PY_CLASS_WIZARD_ID[] = "F.PyClass";
+const char EN_PY_CLASS_DISPLAY_NAME[] = "Python class";
+const char EN_PY_CLASS_DESCRIPTION[] =
+        "Creates new Python class";
+
+// MIME type
+const char C_PY_MIMETYPE[] = "text/x-python";
+const char RC_PY_MIME_XML[] = ":/pythoneditor/pythoneditor.mimetypes.xml";
+const char RC_PY_MIME_ICON[] = ":/pythoneditor/images/text-x-python.png";
 
 /**
-  List of Python keywords, includes "None" and "self"
+  List of Python keywords
   */
-const char* const C_PYTHON_KEYWORDS[] = {
+const char* const LIST_OF_PYTHON_KEYWORDS[] = {
     "and",
     "as",
     "assert",
@@ -56,7 +69,7 @@ const char* const C_PYTHON_KEYWORDS[] = {
 /**
   List of Python magic methods
   */
-const char* const C_PYTHON_MAGIC_METHODS[] = {
+const char* const LIST_OF_PYTHON_MAGICS[] = {
     // ctor & dtor
     "__init__",
     "__del__",
@@ -126,7 +139,7 @@ const char* const C_PYTHON_MAGIC_METHODS[] = {
 /**
   List of python built-in functions
   */
-const char* const C_PYTHON_BUILTINS[] = {
+const char* const LIST_OF_PYTHON_BUILTINS[] = {
     "range",
     "xrange",
     "int",
@@ -141,6 +154,15 @@ const char* const C_PYTHON_BUILTINS[] = {
     "None",
     "True",
     "False"
+};
+
+/**
+  List of default Python modules (only standard Python implementation)
+  */
+const char* const LIST_OF_PYTHON_MODULES[] = {
+    "__builtin__",
+    "gettext",
+    "sys"
 };
 
 } // namespace Constants

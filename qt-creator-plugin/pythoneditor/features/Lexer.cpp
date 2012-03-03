@@ -1,12 +1,12 @@
 
+// Self headers
+#include "../core/constants.h"
+#include "Lexer.h"
+
 // Qt Library
 #include <QtCore/QString>
 #include <QtCore/QSet>
 #include <QtCore/QDebug>
-
-// Self headers
-#include "../core/constants.h"
-#include "Lexer.h"
 
 using namespace PythonEditor::Constants;
 
@@ -27,44 +27,49 @@ static QSet<QString> initWordsSet(const char* const words[], size_t amount)
 
 #define INIT_SET(arr) initWordsSet(arr, (sizeof(arr) / sizeof(const char* const)))
 
-static const QSet<QString> KEYWORDS_SET = INIT_SET(C_PYTHON_KEYWORDS);
-static const QSet<QString> MAGIC_METHODS_SET = INIT_SET(C_PYTHON_MAGIC_METHODS);
-static const QSet<QString> BUILTINS_SET = INIT_SET(C_PYTHON_BUILTINS);
+static const QSet<QString> KEYWORDS_SET = INIT_SET(LIST_OF_PYTHON_KEYWORDS);
+static const QSet<QString> MAGIC_METHODS_SET = INIT_SET(LIST_OF_PYTHON_MAGICS);
+static const QSet<QString> BUILTINS_SET = INIT_SET(LIST_OF_PYTHON_BUILTINS);
 
 ////////////////////////////////////////////////////////////////////////////////
 
-CLexer::CLexer(const QChar *text, const size_t length)
+Lexer::Lexer(const QChar *text, const size_t length)
     :m_src(text, length)
     ,m_state(0)
 {
 }
 
-void CLexer::setState(int state)
+void Lexer::setState(int state)
 {
     m_state = state;
 }
 
-int CLexer::getState() const
+int Lexer::getState() const
 {
     return m_state;
 }
 
-CToken CLexer::read()
+Token Lexer::read()
 {
     m_src.setAnchor();
     if (m_src.isEnd()) {
-        return CToken(FormatedBlockEnd, m_src.anchor(), 0);
+        return Token(FormatedBlockEnd, m_src.anchor(), 0);
     }
+
+    if (m_state != 0) {
+        return readMultiLineStringLiteral();
+    }
+
     QChar first = m_src.peek();
     m_src.move();
 
     if ((first == '\\') && (m_src.peek() == '\n')) {
         m_src.move();
-        return CToken(Format_WHITESPACE, m_src.anchor(), 2);
+        return Token(Format_WHITESPACE, m_src.anchor(), 2);
     }
 
-    //if ((first == '.') && peek().isDigit())
-    //    return readFloatNumber();
+    if ((first == QChar('.')) && m_src.peek().isDigit())
+        return readFloatNumber();
 
     if ((first == '\'') || (first == '\"'))
         return readStringLiteral(first);
@@ -88,24 +93,60 @@ CToken CLexer::read()
     return readOperator();
 }
 
+QString Lexer::value(const Token &tk) const
+{
+    return m_src.value(tk);
+}
+
 /**
   reads single-line string literal, surrounded by ' or " quotes
   */
-CToken CLexer::readStringLiteral(QChar quoteChar)
+Token Lexer::readStringLiteral(QChar quoteChar)
 {
     QChar ch = m_src.peek();
+    if ((ch == quoteChar) && (m_src.peek(1) == quoteChar)) {
+        m_state = quoteChar.unicode();
+        readMultiLineStringLiteral();
+    }
+
     while ((ch != quoteChar) && !ch.isNull()) {
         m_src.move();
         ch = m_src.peek();
     }
     m_src.move();
-    return CToken(Format_STRING, m_src.anchor(), m_src.length());
+    return Token(Format_STRING, m_src.anchor(), m_src.length());
+}
+
+/**
+  reads multi-line string literal, surrounded by ''' or """ sequencies
+  */
+Token Lexer::readMultiLineStringLiteral()
+{
+    QChar quoteChar = static_cast<QChar>(m_state);
+    for (;;) {
+        QChar ch = m_src.peek();
+        if (ch.isNull()) {
+            break;
+        }
+        if ((ch == quoteChar)
+                && (m_src.peek(1) == quoteChar)
+                && (m_src.peek(2) == quoteChar)) {
+            m_state = 0;
+            m_src.move();
+            m_src.move();
+            m_src.move();
+            break;
+        }
+        m_src.move();
+    }
+
+    return Token(Format_STRING, m_src.anchor(), m_src.length());
 }
 
 /**
   reads identifier and classifies it
   */
-CToken CLexer::readIdentifier()
+Token Lexer::readIdentifier()
 {
     QChar ch = m_src.peek();
     while (ch.isLetterOrNumber() || (ch == '_')) {
@@ -127,13 +168,13 @@ CToken CLexer::readIdentifier()
     else if (KEYWORDS_SET.contains(value)) {
         tkFormat = Format_KEYWORD;
     }
-    return CToken(tkFormat, m_src.anchor(), m_src.length());
+    return Token(tkFormat, m_src.anchor(), m_src.length());
 }
 
 inline static bool isHexDigit(QChar ch)
 {
     return (ch.isDigit()
-            || ((ch >= 'a' && ch <= 'f'))
+            || ((ch >= 'a') && (ch <= 'f'))
             || ((ch >= 'A') && (ch <= 'F')));
 }
 
@@ -157,62 +198,56 @@ inline static bool isValidComplexSuffix(QChar ch)
     return ((ch == 'j') || (ch == 'J'));
 }
 
-CToken CLexer::readNumber()
+Token Lexer::readNumber()
 {
-    while (m_src.peek().isDigit()) {
-        m_src.move();
-    }
-    /*
-    if (!isEOF())
+    if (!m_src.isEnd())
     {
-        QChar ch = peek();
+        QChar ch = m_src.peek();
         if (ch.toLower() == 'b') {
-            getChar();
-            while (isBinaryDigit(peek())) {
-                getChar();
+            m_src.move();
+            while (isBinaryDigit(m_src.peek())) {
+                m_src.move();
             }
         }
-        if (ch.toLower() == 'o') {
-            getChar();
-            while (isOctalDigit(peek())) {
-                getChar();
+        else if (ch.toLower() == 'o') {
+            m_src.move();
+            while (isOctalDigit(m_src.peek())) {
+                m_src.move();
             }
         }
-        if (ch.toLower() == 'x') {
-            getChar();
-            while (isHexDigit(peek())) {
-                getChar();
+        else if (ch.toLower() == 'x') {
+            m_src.move();
+            while (isHexDigit(m_src.peek())) {
+                m_src.move();
             }
         }
         else {  // either integer or float number
-            getChar();
-            while (peek().isDigit()) {
-                getChar();
-            }
-            //return readFloatNumber();
+           // while (m_src.peek().isDigit()) {
+            //    m_src.move();
+           // }
+            return readFloatNumber();
         }
-       // if (isValidIntegerSuffix(peek())) {
-        //    getChar();
-        //}
+        if (isValidIntegerSuffix(m_src.peek())) {
+            m_src.move();
+        }
     }
-    //*/
-    return CToken(Format_NUMBER, m_src.anchor(), m_src.length());
+    return Token(Format_NUMBER, m_src.anchor(), m_src.length());
 }
 
-CToken CLexer::readFloatNumber() {
-    /*
+Token Lexer::readFloatNumber() {
     enum {
         State_INTEGER,
         State_FRACTION,
         State_EXPONENT
     } state;
-    state = (m_text[initialPos] != '.') ? State_INTEGER : State_FRACTION;
+    state = (m_src.peek(-1) == '.') ? State_FRACTION : State_INTEGER;
 
     for (;;)
     {
-        if (isEOF())
+        QChar ch = m_src.peek();
+        if (ch.isNull())
             break;
-        QChar ch = peek();
+
         if (state == State_INTEGER) {
             if (ch == '.') {
                 state = State_FRACTION;
@@ -220,10 +255,15 @@ CToken CLexer::readFloatNumber() {
                 break;
         } else if (state == State_FRACTION) {
             if ((ch == 'e') || (ch == 'E')) {
-                ch = peek(1);
-                if (ch == '-' || '+') {
-                    getChar();
+                QChar next = m_src.peek(1);
+                QChar next2 = m_src.peek(2);
+                bool isExp = next.isDigit()
+                        || (((next == '-') || (next == '+')) && next2.isDigit());
+                if (isExp) {
+                    m_src.move();
                     state = State_EXPONENT;
+                } else {
+                    break;
                 }
             } else if (!ch.isDigit())
                 break;
@@ -231,60 +271,59 @@ CToken CLexer::readFloatNumber() {
             if (!ch.isDigit())
                 break;
         }
-        getChar();
+        m_src.move();
     }
-    */
-    return CToken(Format_NUMBER, m_src.anchor(), m_src.length());
+    return Token(Format_NUMBER, m_src.anchor(), m_src.length());
 }
 
 /**
   reads single-line python comment, started with "#"
   */
-CToken CLexer::readComment()
+Token Lexer::readComment()
 {
     QChar ch = m_src.peek();
     while ((ch != '\n') && !ch.isNull()) {
         m_src.move();
         ch = m_src.peek();
     }
-    return CToken(Format_COMMENT, m_src.anchor(), m_src.length());
+    return Token(Format_COMMENT, m_src.anchor(), m_src.length());
 }
 
 /**
   reads single-line python doxygen comment, started with "##"
   */
-CToken CLexer::readDoxygenComment()
+Token Lexer::readDoxygenComment()
 {
     QChar ch = m_src.peek();
     while ((ch != '\n') && !ch.isNull()) {
         m_src.move();
         ch = m_src.peek();
     }
-    return CToken(Format_DOXYGEN_COMMENT, m_src.anchor(), m_src.length());
+    return Token(Format_DOXYGEN_COMMENT, m_src.anchor(), m_src.length());
 }
 
 /**
   reads whitespace
   */
-CToken CLexer::readWhiteSpace()
+Token Lexer::readWhiteSpace()
 {
     while (m_src.peek().isSpace()) {
         m_src.move();
     }
-    return CToken(Format_WHITESPACE, m_src.anchor(), m_src.length());
+    return Token(Format_WHITESPACE, m_src.anchor(), m_src.length());
 }
 
 /**
   reads punctuation symbols, excluding quotes (' and ")
   */
-CToken CLexer::readOperator()
+Token Lexer::readOperator()
 {
     QChar ch = m_src.peek();
     while (ch.isPunct() && (ch != '\'') && (ch != '\"')) {
         m_src.move();
         ch = m_src.peek();
     }
-    return CToken(Format_OPERATOR, m_src.anchor(), m_src.length());
+    return Token(Format_OPERATOR, m_src.anchor(), m_src.length());
 }
 
 } // PythonEditor

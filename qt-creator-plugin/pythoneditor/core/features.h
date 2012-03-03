@@ -5,7 +5,6 @@
   Enables/Disables plugin features
   Just comment #include directive to disable feature
   */
-
 #include "../features/FileWizard.h"
 #include "../features/Highlighter.h"
 #include "../features/Indenter.h"

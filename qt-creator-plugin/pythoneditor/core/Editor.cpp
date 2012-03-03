@@ -19,37 +19,37 @@ using namespace PythonEditor::Constants;
 
 namespace PythonEditor {
 
-CEditor::CEditor(CEditorWidget *editorWidget)
+Editor::Editor(EditorWidget *editorWidget)
     :BaseTextEditor(editorWidget)
 {
     setContext(Core::Context(C_PYTHONEDITOR_ID,
                              TextEditor::Constants::C_TEXTEDITOR));
 }
 
-CEditor::~CEditor()
+Editor::~Editor()
 {
 }
 
-Core::IEditor* CEditor::duplicate(QWidget *parent)
+Core::IEditor* Editor::duplicate(QWidget *parent)
 {
-    CEditorWidget* widget = new CEditorWidget(parent);
+    EditorWidget* widget = new EditorWidget(parent);
     widget->duplicateFrom(editorWidget());
-    CPlugin::initializeEditor(widget);
+    Plugin::initializeEditor(widget);
 
     return widget->editor();
 }
 
-QString CEditor::id() const
+QString Editor::id() const
 {
     return QLatin1String(C_PYTHONEDITOR_ID);
 }
 
-QString CEditor::preferredModeType() const
+QString Editor::preferredModeType() const
 {
     return QString();
 }
 
-bool CEditor::open(QString *errorString,
+bool Editor::open(QString *errorString,
                    const QString &fileName,
                    const QString &realFileName)
 {

@@ -5,18 +5,18 @@
 
 namespace PythonEditor {
 
-class CEditorWidget;
+class EditorWidget;
 
 /**
   Implements interface IEditor, makes possible to edit Python source
   */
-class CEditor : public TextEditor::BaseTextEditor
+class Editor : public TextEditor::BaseTextEditor
 {
     Q_OBJECT
 
 public:
-    explicit CEditor(CEditorWidget* editorWidget);
-    virtual ~CEditor();
+    explicit Editor(EditorWidget* editorWidget);
+    virtual ~Editor();
 
     virtual bool duplicateSupported() const { return true; }
     virtual Core::IEditor* duplicate(QWidget *parent);

@@ -1,13 +1,16 @@
 
+// Self headers
+#include "Lexer.h"
+#include "Highlighter.h"
+
 // QtCreator platform & other plugins
 #include <texteditor/basetextdocumentlayout.h>
 #include <texteditor/basetextdocument.h>
 #include <texteditor/fontsettings.h>
 #include <texteditor/texteditorconstants.h>
 
-// Self headers
-#include "Lexer.h"
-#include "Highlighter.h"
+// Qt Library
+#include <QtCore/QDebug>
 
 namespace PythonEditor {
 
@@ -34,38 +37,40 @@ QVector<QString> initFormatCategories()
 static const QVector<QString> FORMAT_CATEGORIES = initFormatCategories();
 ////////////////////////////////////////////////////////////////////////////////
 
-CHighlighter::CHighlighter(TextEditor::BaseTextDocument *parent)
+Highlighter::Highlighter(TextEditor::BaseTextDocument *parent)
     :TextEditor::SyntaxHighlighter(parent)
 {
 }
 
-CHighlighter::~CHighlighter()
+Highlighter::~Highlighter()
 {
 }
 
-void CHighlighter::setFontSettings(const TextEditor::FontSettings &fs)
+void Highlighter::setFontSettings(const TextEditor::FontSettings &fs)
 {
     m_formats = fs.toTextCharFormats(FORMAT_CATEGORIES);
     rehighlight();
 }
 
-void CHighlighter::highlightBlock(const QString &text)
+void Highlighter::highlightBlock(const QString &text)
 {
     int initialState = previousBlockState();
+    qDebug() << "Initial state = " << initialState;
     if (initialState == -1)
     {
         initialState = 0;
     }
 
-    CLexer lexer(text.constData(), text.size());
+    Lexer lexer(text.constData(), text.size());
     lexer.setState(initialState);
 
-    CToken tk;
+    Token tk;
     while ((tk = lexer.read()).format() != FormatedBlockEnd)
     {
         setFormat(tk.begin(), tk.length(), m_formats[tk.format()]);
     }
     setCurrentBlockState(lexer.getState());
+    qDebug() << "After highlighBlock() state = " << lexer.getState();
 }
 
 } // PythonEditor
