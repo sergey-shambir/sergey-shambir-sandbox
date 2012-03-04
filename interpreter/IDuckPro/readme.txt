@@ -20,9 +20,9 @@ variable ::= [A-Z,a-z]+
 
 3. Rotate a few times, quack, fly three times
 
-    While(IAmSure) right; quack; fly; fly; fly;
+    While (probably) right; quack; fly; fly; fly;
 
-4. Nested while cycles (will fly all day if IAmSure true in first hour)
+4. Nested while cycles (will fly all day if probably becomes true in first hour; probably is random-value variable)
 
-    While (IAmSure) while (DAYLIGHT) fly;
+    While (probably) while (DAYLIGHT) fly;
 
