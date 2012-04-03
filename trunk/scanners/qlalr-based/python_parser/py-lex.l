@@ -119,14 +119,24 @@ escapednewline \\[\n]
 <ONSTATEMENT>"import" { return KW_IMPORT; }
 <ONSTATEMENT>"from" { return KW_FROM; }
 <ONSTATEMENT>"as" { return KW_AS; }
+<ONSTATEMENT>"while" { return KW_WHILE; }
 <ONSTATEMENT>"if" { return KW_IF; }
+<ONSTATEMENT>"elif" { return KW_ELIF; }
+<ONSTATEMENT>"else" { return KW_ELSE; }
 <ONSTATEMENT>"break" { return KW_BREAK; }
 <ONSTATEMENT>"continue" { return KW_CONTINUE; }
+<ONSTATEMENT>"try" { return KW_TRY; }
+<ONSTATEMENT>"except" { return KW_EXCEPT; }
+<ONSTATEMENT>"finally" { return KW_FINALLY; }
 <ONSTATEMENT>"pass" { return KW_PASS; }
 <ONSTATEMENT>"print" { return KW_PRINT; }
 <ONSTATEMENT>"class" { return KW_CLASS; }
+<ONSTATEMENT>"def" { return KW_DEF; }
 
 <ONSTATEMENT>"or" { return KW_OR; }
+<ONSTATEMENT>"is" { return KW_IS; }
+<ONSTATEMENT>"in" { return KW_IN; }
+<ONSTATEMENT>"not" { return KW_NOT; }
 
 <ONSTATEMENT>"None" { return LT_NONE; }
 <ONSTATEMENT>"True" { return LT_BOOLEAN; }
@@ -140,8 +150,17 @@ escapednewline \\[\n]
 
 <ONSTATEMENT>"+" { return OP_PLUS; }
 <ONSTATEMENT>"-" { return OP_MINUS; }
+<ONSTATEMENT>"==" { return OP_EQUAL; }
+<ONSTATEMENT>"!=" { return OP_NOT_EQUAL; }
+<ONSTATEMENT>"<>" { return OP_NOT_EQUAL; }
 <ONSTATEMENT>"=" { return OP_ASSIGN; }
+<ONSTATEMENT>">=" { return OP_GE; }
+<ONSTATEMENT>"<=" { return OP_LE; }
+<ONSTATEMENT>">" { return OP_GT; }
+<ONSTATEMENT>"<" { return OP_LT; }
 <ONSTATEMENT>"." { return OP_DOT; }
+<ONSTATEMENT>"**" { return OP_POWER; }
+<ONSTATEMENT>"%" { return OP_MOD; }
 
 <ONSTATEMENT>#.* {
   /* skip */

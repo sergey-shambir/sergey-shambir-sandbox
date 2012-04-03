@@ -57,15 +57,25 @@
 %token KW_FROM
 %token KW_AS
 
+%token KW_WHILE
 %token KW_IF
+%token KW_ELIF
+%token KW_ELSE
 %token KW_BREAK
 %token KW_CONTINUE
+%token KW_TRY
+%token KW_EXCEPT
+%token KW_FINALLY
 %token KW_PASS
 %token KW_PRINT
 
 %token KW_CLASS
+%token KW_DEF
 
 %token KW_OR
+%token KW_IS
+%token KW_IN
+%token KW_NOT
 
 -- delimiters have DL_ prefix
 %token DL_NEWLINE
@@ -80,7 +90,15 @@
 %token OP_PLUS
 %token OP_MINUS
 %token OP_DOT
+%token OP_EQUAL
+%token OP_NOT_EQUAL
+%token OP_LT
+%token OP_LE
+%token OP_GT
+%token OP_GE
 %token OP_ASSIGN
+%token OP_POWER
+%token OP_MOD
 
 %token ERROR
 %start translation_unit
@@ -278,6 +296,7 @@ atom ::= DL_LEFT_PAREN DL_RIGHT_PAREN ;
 atom ::= DL_LEFT_PAREN testlist DL_RIGHT_PAREN ;
 
 trailer ::= OP_DOT IDENTIFIER ;
+trailer ::= DL_LEFT_PAREN DL_RIGHT_PAREN ;
 trailer ::= DL_LEFT_PAREN arguments_list DL_RIGHT_PAREN ;
 -- TODO: "func(args)" expressions
 -- TODO: "array[index]" expressions
@@ -294,16 +313,32 @@ primary_expression ::= atom trailers_list ;
 
 -- Expressions begin
 
--- TODO: implement normal test_of_and
+-- TODO: implement normal test_of_binary
 
 term ::= primary_expression ;
 
-test_of_and ::= term ;
-test_of_and ::= test_of_and OP_PLUS term;
-test_of_and ::= test_of_and OP_MINUS term;
+test_of_binary ::= term ;
+test_of_binary ::= test_of_binary OP_PLUS term ;
+test_of_binary ::= test_of_binary OP_MINUS term ;
+test_of_binary ::= test_of_binary OP_MOD term ;
+test_of_binary ::= test_of_binary comparison term ;
+comparison ::= OP_EQUAL ;
+comparison ::= OP_NOT_EQUAL ;
+comparison ::= OP_LT ;
+comparison ::= OP_GT ;
+comparison ::= OP_LE ;
+comparison ::= OP_GE ;
+comparison ::= KW_IN ;
+comparison ::= KW_NOT KW_IN ;
+comparison ::= KW_IS ;
+comparison ::= KW_IS KW_NOT ;
+-- comparison operators: '<'|'>'|'=='|'>='|'<='|'<>'|'!='|'in'|'not' 'in'|'is'|'is' 'not'
 
-test_of_or ::= test_of_and ;
-test_of_or ::= test_of_and KW_OR test_of_and ;
+test_of_not ::= test_of_binary ;
+test_of_not ::= KW_NOT test_of_not ;
+
+test_of_or ::= test_of_not ;
+test_of_or ::= test_of_not KW_OR test_of_not ;
 
 test ::= test_of_or ;
 --test ::= KW_IF or_test KW_ELSE test
@@ -314,13 +349,16 @@ testlist_head ::= testlist_head DL_COMMA test ;
 testlist ::= testlist_head ;
 testlist ::= testlist_head DL_COMMA ;
 
-argument ::= test ;
 -- TODO: extend this definition // argument: test [comp_for] | test '=' test
+argument ::= test ;
+argument ::= test OP_ASSIGN test ;
 
 arguments_list_head ::= argument ;
 arguments_list_head ::= arguments_list_head DL_COMMA argument ;
+-- TODO: add this ending variant // '*' test (',' argument)* [',' '**' test] 
 arguments_list ::= arguments_list_head ;
 arguments_list ::= arguments_list_head DL_COMMA ;
+arguments_list ::= arguments_list_head DL_COMMA OP_POWER test ;
 
 expression_statement ::= testlist ;
 expression_statement ::= expression_statement OP_ASSIGN testlist ;
@@ -356,13 +394,82 @@ simple_statement ::= small_statements_list DL_NEWLINE ;
 class_definition ::= KW_CLASS IDENTIFIER DL_COLON suite;
 class_definition ::= KW_CLASS IDENTIFIER DL_LEFT_PAREN qualified_names_list DL_RIGHT_PAREN DL_COLON suite;
 
+-- function definition begin
+function_param_def ::= IDENTIFIER ;
+function_param_def ::= DL_LEFT_PAREN function_param_list DL_RIGHT_PAREN ;
+function_param_list_head ::= function_param_list_head DL_COMMA function_param_def ;
+function_param_list ::= function_param_list_head ;
+function_param_list ::= function_param_list_head DL_COMMA ;
+
+function_param_full_list_head ::= function_param_def ;
+function_param_full_list_head ::= function_param_def OP_ASSIGN test ;
+function_param_full_list_head ::= function_param_full_list_head DL_COMMA function_param_def ;
+function_param_full_list_head ::= function_param_full_list_head DL_COMMA function_param_def OP_ASSIGN test ;
+function_param_full_list ::= function_param_full_list_head ;
+function_param_full_list ::= function_param_full_list_head DL_COMMA ;
+
+-- varargslist: ((fpdef ['=' test] ',')*
+--              ('*' NAME [',' '**' NAME] | '**' NAME) |
+--              fpdef ['=' test] (',' fpdef ['=' test])* [','])
+var_arguments_list ::= function_param_full_list ;
+var_arguments_list ::= function_param_full_list_head DL_COMMA OP_POWER IDENTIFIER ;
+
+function_parameters ::= DL_LEFT_PAREN DL_RIGHT_PAREN ;
+function_parameters ::= DL_LEFT_PAREN var_arguments_list DL_RIGHT_PAREN ;
+function_definition ::= KW_DEF IDENTIFIER function_parameters DL_COLON suite ;
+
+-- function definition end
+
+-- try statement begin
+except_clause ::= KW_EXCEPT ;
+except_clause ::= KW_EXCEPT test;
+except_clause ::= KW_EXCEPT test KW_AS test;
+except_clause ::= KW_EXCEPT test DL_COMMA test;
+except_suite ::= except_clause DL_COLON suite ;
+except_clauses_list ::= except_suite ;
+except_clauses_list ::= except_clauses_list except_suite ;
+
+except_block ::= except_clauses_list ;
+except_block ::= except_clauses_list KW_ELSE DL_COLON suite ;
+except_block ::= except_clauses_list KW_FINALLY DL_COLON suite ;
+except_block ::= except_clauses_list KW_ELSE DL_COLON suite KW_FINALLY DL_COLON suite ;
+
+try_statement ::= KW_TRY DL_COLON suite KW_FINALLY DL_COLON suite ;
+try_statement ::= KW_TRY DL_COLON suite except_block ;
+-- try statement end
+
+-- while statement begin
+while_statement ::= KW_WHILE test DL_COLON suite ;
+while_statement ::= KW_WHILE test DL_COLON suite KW_ELSE DL_COLON suite ;
+-- while statement end
+
+-- if statement begin
+-- Grammar // if_stmt: 'if' test ':' suite ('elif' test ':' suite)* ['else' ':' suite]
+
+if_statement ::= KW_IF test DL_COLON suite ;
+if_statement ::= KW_IF test DL_COLON suite elif_blocks_list ;
+if_statement ::= KW_IF test DL_COLON suite KW_ELSE DL_COLON suite ;
+if_statement ::= KW_IF test DL_COLON suite elif_blocks_list KW_ELSE DL_COLON suite ;
+
+elif_block ::= KW_ELIF test DL_COLON suite ;
+elif_blocks_list ::= elif_block ;
+elif_blocks_list ::= elif_blocks_list elif_block ;
+
+-- if statement end
+
 suite ::= simple_statement ;
 -- TODO: add INDENT/DEDENT tokens to this suite definition
-suite ::= DL_NEWLINE DL_INDENT statements_list DL_DEDENT;
+newlines_list ::= DL_NEWLINE ;
+newlines_list ::= newlines_list DL_NEWLINE ;
+suite ::= newlines_list DL_INDENT statements_list DL_DEDENT;
 
 --compound_statement ::= if_statement ;
 --compound_statement ::= while_statement ;
 --compound_statement ::= for_statement ;
+compound_statement ::= if_statement ;
+compound_statement ::= while_statement ;
+compound_statement ::= try_statement ;
+compound_statement ::= function_definition ;
 compound_statement ::= class_definition ;
 
 common_statement ::= simple_statement ;
