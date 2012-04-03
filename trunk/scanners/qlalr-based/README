@@ -1,0 +1,6 @@
+
+==== About qlalr ====
+
+Qlalr is parser generator used in Qt library and QtCreator IDE. It works like AntLR, Yacc/Bison, etc.
+You can download qlalr source code from here: http://qt.gitorious.org/qt/qlalr
+Qlalr is undocumented, but it has some examples that comes with source code. You also can find qlalr examples inside Qt 4.x (module QtScript) or QtCreator IDE source code ("cplusplus", "qmljs" and "glsl" folders in "src/libs").
