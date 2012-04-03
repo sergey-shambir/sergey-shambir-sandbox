@@ -62,6 +62,11 @@ decimal [1-9][0-9]*|0
 
 icst ({decimal}|{octal}|0[xX]{hexditit}+)
 
+simplestring_squote \'([^'\\\n]*(\\(.|\n)[^'\\\n]*)*)\'
+simplestring_dquote \"([^"\\\n]*(\\(.|\n)[^"\\\n]*)*)\"
+
+simplestring ({simplestring_squote}|{simplestring_dquote})
+
 escapednewline \\[\n]
 
 %%
@@ -105,6 +110,12 @@ escapednewline \\[\n]
 
 <ONSTATEMENT>[ \t]+ { /* skip */ }
 
+<ONSTATEMENT>{simplestring} {
+        QString qtext(yytext);
+        yylval.s = intern (qtext.mid(1, qtext.size()));
+        return LT_STRING;
+    }
+
 <ONSTATEMENT>"import" { return KW_IMPORT; }
 <ONSTATEMENT>"from" { return KW_FROM; }
 <ONSTATEMENT>"as" { return KW_AS; }
@@ -112,7 +123,10 @@ escapednewline \\[\n]
 <ONSTATEMENT>"break" { return KW_BREAK; }
 <ONSTATEMENT>"continue" { return KW_CONTINUE; }
 <ONSTATEMENT>"pass" { return KW_PASS; }
+<ONSTATEMENT>"print" { return KW_PRINT; }
 <ONSTATEMENT>"class" { return KW_CLASS; }
+
+<ONSTATEMENT>"or" { return KW_OR; }
 
 <ONSTATEMENT>"None" { return LT_NONE; }
 <ONSTATEMENT>"True" { return LT_BOOLEAN; }
@@ -124,51 +138,10 @@ escapednewline \\[\n]
 <ONSTATEMENT>")" { return DL_RIGHT_PAREN; }
 <ONSTATEMENT>";" { return DL_SEMICOLON; }
 
-<ONSTATEMENT>"+=" { return ADD_ASSIGN; }
-<ONSTATEMENT>"&" { return AMPERSAND; }
-<ONSTATEMENT>"&=" { return AND_ASSIGN; }
-<ONSTATEMENT>"&&" { return AND_OP; }
-<ONSTATEMENT>"!" { return BANG; }
-<ONSTATEMENT>"-" { return DASH; }
-<ONSTATEMENT>"--" { return DEC_OP; }
-<ONSTATEMENT>"/=" { return DIV_ASSIGN; }
-<ONSTATEMENT>"do" { return DO; }
-<ONSTATEMENT>"." { return DOT; }
-<ONSTATEMENT>"else" { return ELSE; }
-<ONSTATEMENT>"=" { return EQUAL; }
-<ONSTATEMENT>"==" { return EQ_OP; }
-<ONSTATEMENT>"for" { return FOR; }
-<ONSTATEMENT>">=" { return GE_OP; }
-<ONSTATEMENT>"in" { return IN; }
-<ONSTATEMENT>"++" { return INC_OP; }
-<ONSTATEMENT>"<" { return LEFT_ANGLE; }
-<ONSTATEMENT>"<<=" { return LEFT_ASSIGN; }
-<ONSTATEMENT>"{" { return LEFT_BRACE; }
-<ONSTATEMENT>"[" { return LEFT_BRACKET; }
-<ONSTATEMENT>"<<" { return LEFT_OP; }
-<ONSTATEMENT>"<=" { return LE_OP; }
-<ONSTATEMENT>"%=" { return MOD_ASSIGN; }
-<ONSTATEMENT>"*=" { return MUL_ASSIGN; }
-<ONSTATEMENT>"!=" { return NE_OP; }
-<ONSTATEMENT>"|=" { return OR_ASSIGN; }
-<ONSTATEMENT>"||" { return OR_OP; }
-<ONSTATEMENT>"%" { return PERCENT; }
-<ONSTATEMENT>"+" { return PLUS; }
-<ONSTATEMENT>"?" { return QUESTION; }
-<ONSTATEMENT>"return" { return RETURN; }
-<ONSTATEMENT>">" { return RIGHT_ANGLE; }
-<ONSTATEMENT>">>=" { return RIGHT_ASSIGN; }
-<ONSTATEMENT>"}" { return RIGHT_BRACE; }
-<ONSTATEMENT>"]" { return RIGHT_BRACKET; }
-<ONSTATEMENT>">>" { return RIGHT_OP; }
-<ONSTATEMENT>"/" { return SLASH; }
-<ONSTATEMENT>"*" { return STAR; }
-<ONSTATEMENT>"-=" { return SUB_ASSIGN; }
-<ONSTATEMENT>"~" { return TILDE; }
-<ONSTATEMENT>"|" { return VERTICAL_BAR; }
-<ONSTATEMENT>"while" { return WHILE; }
-<ONSTATEMENT>"^=" { return XOR_ASSIGN; }
-<ONSTATEMENT>"^" { return XOR_OP; }
+<ONSTATEMENT>"+" { return OP_PLUS; }
+<ONSTATEMENT>"-" { return OP_MINUS; }
+<ONSTATEMENT>"=" { return OP_ASSIGN; }
+<ONSTATEMENT>"." { return OP_DOT; }
 
 <ONSTATEMENT>#.* {
   /* skip */
@@ -176,7 +149,6 @@ escapednewline \\[\n]
 
 <ONSTATEMENT>[_a-zA-Z][_a-zA-Z0-9]* {
   yylval.s = intern (yytext);
-
   return IDENTIFIER;
 }
 
