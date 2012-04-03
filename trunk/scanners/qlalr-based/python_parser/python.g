@@ -42,22 +42,30 @@
 %parser PyParserTable
 %merged_output python.cpp
 
+%token IDENTIFIER
+
 -- literals have LT_ prefix
 %token LT_NONE
 %token LT_BOOLEAN
 %token LT_INTEGER
 %token LT_FLOAT
 %token LT_COMPLEX
+%token LT_STRING
 
 -- keywords have KW_ prefix
 %token KW_IMPORT
 %token KW_FROM
 %token KW_AS
+
 %token KW_IF
 %token KW_BREAK
 %token KW_CONTINUE
 %token KW_PASS
+%token KW_PRINT
+
 %token KW_CLASS
+
+%token KW_OR
 
 -- delimiters have DL_ prefix
 %token DL_NEWLINE
@@ -69,57 +77,11 @@
 %token DL_SEMICOLON
 %token DL_COMMA
 
-%token ADD_ASSIGN
-%token AMPERSAND
-%token AND_ASSIGN
-%token AND_OP
-%token BANG
-%token CARET
-%token DASH
-%token DEC_OP
-%token DIV_ASSIGN
-%token DO
-%token DOT
-%token ELSE
-%token EQUAL
-%token EQ_OP
-%token FOR
-%token GE_OP
-%token IDENTIFIER
-%token IN
-%token INC_OP
-%token LEFT_ANGLE
-%token LEFT_ASSIGN
-%token LEFT_BRACE
-%token LEFT_BRACKET
-%token LEFT_OP
-%token LE_OP
-%token MAT2
-%token MAT3
-%token MAT4
-%token MOD_ASSIGN
-%token MUL_ASSIGN
-%token NE_OP
-%token OR_ASSIGN
-%token OR_OP
-%token OUT
-%token PERCENT
-%token PLUS
-%token QUESTION
-%token RETURN
-%token RIGHT_ANGLE
-%token RIGHT_ASSIGN
-%token RIGHT_BRACE
-%token RIGHT_BRACKET
-%token RIGHT_OP
-%token SLASH
-%token STAR
-%token SUB_ASSIGN
-%token TILDE
-%token VERTICAL_BAR
-%token WHILE
-%token XOR_ASSIGN
-%token XOR_OP
+%token OP_PLUS
+%token OP_MINUS
+%token OP_DOT
+%token OP_ASSIGN
+
 %token ERROR
 %start translation_unit
 
@@ -302,33 +264,87 @@ bool PyParser::parse()
           switch (r) {
 ./
 
-
 translation_unit ::= statements_list ;
 
-variable_identifier ::= IDENTIFIER ;
+atom ::= LT_NONE ;
+atom ::= LT_BOOLEAN ;
+atom ::= LT_INTEGER ;
+atom ::= LT_FLOAT ;
+atom ::= LT_COMPLEX ;
+atom ::= LT_STRING ;
+atom ::= IDENTIFIER ;
+atom ::= DL_LEFT_PAREN DL_RIGHT_PAREN ;
+-- TODO: change to // testlist_comp: test ( comp_for | (',' test)* [','] )
+atom ::= DL_LEFT_PAREN testlist DL_RIGHT_PAREN ;
 
-primary_expression ::= variable_identifier ;
-primary_expression ::= LT_NONE ;
-primary_expression ::= LT_BOOLEAN ;
-primary_expression ::= LT_INTEGER ;
-primary_expression ::= LT_FLOAT ;
-primary_expression ::= LT_COMPLEX ;
+trailer ::= OP_DOT IDENTIFIER ;
+trailer ::= DL_LEFT_PAREN arguments_list DL_RIGHT_PAREN ;
+-- TODO: "func(args)" expressions
+-- TODO: "array[index]" expressions
+
+trailers_list ::= trailer ;
+trailers_list ::= trailers_list trailer ;
+
+primary_expression ::= atom ;
+primary_expression ::= atom trailers_list ;
 --primary_expression ::= LEFT_PAREN expression RIGHT_PAREN ;
-
-
-postfix_expression ::= primary_expression ;
+--postfix_expression ::= primary_expression ;
 --postfix_expression ::= function_call ;
-postfix_expression ::= postfix_expression DOT IDENTIFIER ;
+--postfix_expression ::= postfix_expression DOT IDENTIFIER ;
 
--- pythonized
-qualified_name ::= qualified_name DOT IDENTIFIER ;
+-- Expressions begin
+
+-- TODO: implement normal test_of_and
+
+term ::= primary_expression ;
+
+test_of_and ::= term ;
+test_of_and ::= test_of_and OP_PLUS term;
+test_of_and ::= test_of_and OP_MINUS term;
+
+test_of_or ::= test_of_and ;
+test_of_or ::= test_of_and KW_OR test_of_and ;
+
+test ::= test_of_or ;
+--test ::= KW_IF or_test KW_ELSE test
+--test ::= lambda_definition ;
+
+testlist_head ::= test ;
+testlist_head ::= testlist_head DL_COMMA test ;
+testlist ::= testlist_head ;
+testlist ::= testlist_head DL_COMMA ;
+
+argument ::= test ;
+-- TODO: extend this definition // argument: test [comp_for] | test '=' test
+
+arguments_list_head ::= argument ;
+arguments_list_head ::= arguments_list_head DL_COMMA argument ;
+arguments_list ::= arguments_list_head ;
+arguments_list ::= arguments_list_head DL_COMMA ;
+
+expression_statement ::= testlist ;
+expression_statement ::= expression_statement OP_ASSIGN testlist ;
+
+-- Expressions end
+
+qualified_name ::= qualified_name OP_DOT IDENTIFIER ;
 qualified_name ::= IDENTIFIER ;
+
+qualified_names_list_head ::= qualified_names_list_head qualified_name DL_COMMA ;
+qualified_names_list_head ::= qualified_name DL_COMMA ;
+qualified_names_list ::= qualified_name ;
+qualified_names_list ::= qualified_names_list_head qualified_name ;
 
 import_statement ::= KW_IMPORT qualified_name ;
 import_statement ::= KW_FROM qualified_name KW_IMPORT qualified_name ;
 
+--print_stmt: 'print' ( [ test (',' test)* [','] ] | '>>' test [ (',' test)+ [','] ] )
+print_statement ::= KW_PRINT ;
+print_statement ::= KW_PRINT testlist ;
+
 small_statement ::= import_statement ;
-small_statement ::= postfix_expression ;
+small_statement ::= expression_statement ;
+small_statement ::= print_statement ;
 small_statement ::= KW_PASS ;
 
 small_statements_list ::= small_statements_list DL_SEMICOLON small_statement ;
@@ -338,12 +354,7 @@ simple_statement ::= small_statements_list DL_NEWLINE ;
 
 -- TODO: add class testlist (need for base classes support)
 class_definition ::= KW_CLASS IDENTIFIER DL_COLON suite;
-class_definition ::= KW_CLASS IDENTIFIER DL_LEFT_PAREN base_classes_list DL_RIGHT_PAREN DL_COLON suite;
-
-base_classes_list ::= qualified_name ;
-base_classes_list ::= qualified_names_list qualified_name ;
-qualified_names_list ::= qualified_names_list qualified_name DL_COMMA ;
-qualified_names_list ::= qualified_name DL_COMMA ;
+class_definition ::= KW_CLASS IDENTIFIER DL_LEFT_PAREN qualified_names_list DL_RIGHT_PAREN DL_COLON suite;
 
 suite ::= simple_statement ;
 -- TODO: add INDENT/DEDENT tokens to this suite definition
