@@ -43,7 +43,8 @@
 %decl pyparser_p.h
 %impl pyparser.cpp
 
-%token IDENTIFIER
+%token TK_IDENTIFIER
+%token TK_ERROR
 
 -- literals have LT_ prefix
 %token LT_NONE
@@ -65,6 +66,10 @@
 %token KW_ELSE
 %token KW_BREAK
 %token KW_CONTINUE
+%token KW_RETURN
+%token KW_YIELD
+%token KW_RAISE
+
 %token KW_TRY
 %token KW_EXCEPT
 %token KW_FINALLY
@@ -105,7 +110,6 @@
 %token OP_MOD
 %token OP_PLUSHKA
 
-%token ERROR
 %start translation_unit
 
 
@@ -138,17 +142,21 @@ protected:
     inline void reallocateStack();
 
     inline Value &sym(int index)
-    { return sym_stack [tos + index - 1]; }
+    {
+        return sym_stack [tos + index - 1];
+    }
 
     int nextToken();
 
     bool isTypename(const QString *s) const
     {
-      return types.contains(s);
+        return types.contains(s);
     }
 
     inline const QString *intern(const QString &s)
-    { return &*string_repository.insert(s); }
+    {
+        return &*string_repository.insert(s);
+    }
 
 protected:
     int tos;
@@ -160,42 +168,41 @@ protected:
     QSet<const QString*> types;
 
     struct /*Context*/ {
-      int line;
-      /* Python semantics depends on indentation level, so we should keep it */
-      int indentCurrent;
-      QStack<int> indents;
-      const QString *function_name;
-      QString fileName;
+        int line;
+        /* Python semantics depends on indentation level, so we should keep it */
+        int indentCurrent;
+        QStack<int> indents;
+        const QString *function_name;
+        QString fileName;
 
-      void init()
-      {
-        line = 1;
-        indentCurrent = 0;
-        function_name = 0;
-        fileName.clear();
-        indents.clear();
-      }
-
-      bool checkIndent()
-      {
-        if ((indentCurrent && indents.isEmpty())
-            || (indentCurrent > indents.top())) {
-          indents.push(indentCurrent);
-          return true;
+        void init()
+        {
+            line = 1;
+            indentCurrent = 0;
+            function_name = 0;
+            fileName.clear();
+            indents.clear();
         }
-        return false;
-      }
 
-      bool checkDedent()
-      {
-        if (indents.isEmpty())
-          return false;
-        if (indentCurrent < indents.top()) {
-          indents.pop();
-          return true;
+        bool checkIndent()
+        {
+            if ((indentCurrent && indents.isEmpty()) || (indentCurrent > indents.top())) {
+                indents.push(indentCurrent);
+                return true;
+            }
+            return false;
         }
-        return false;
-      }
+
+        bool checkDedent()
+        {
+            if (indents.isEmpty())
+                return false;
+            if (indentCurrent < indents.top()) {
+                indents.pop();
+                return true;
+            }
+            return false;
+        }
     } context;
 };
 
@@ -236,58 +243,58 @@ PyParser::~PyParser()
 
 bool PyParser::parse()
 {
-  const int INITIAL_STATE = 0;
+    const int INITIAL_STATE = 0;
 
-  int yytoken = -1;
+    int yytoken = -1;
 
-  reallocateStack();
+    reallocateStack();
 
-  context.init();
-  tos = 0;
-  state_stack[++tos] = INITIAL_STATE;
+    context.init();
+    tos = 0;
+    state_stack[++tos] = INITIAL_STATE;
 
-  while (true)
+    while (true)
     {
-      if (yytoken == -1 && - TERMINAL_COUNT != action_index [state_stack [tos]])
-        yytoken = nextToken();
+        if (yytoken == -1 && - TERMINAL_COUNT != action_index [state_stack [tos]])
+            yytoken = nextToken();
 
-      int act = t_action (state_stack [tos], yytoken);
+        int act = t_action (state_stack [tos], yytoken);
 
-      if (act == ACCEPT_STATE) {
-        return true;
-      }
-
-      else if (act > 0)
-        {
-          if (++tos == stack_size)
-            reallocateStack();
-
-          sym_stack [tos] = yylval;
-          state_stack [tos] = act;
-          yytoken = -1;
+        if (act == ACCEPT_STATE) {
+            return true;
         }
 
-      else if (act < 0)
+        else if (act > 0)
         {
-          int r = - act - 1;
+            if (++tos == stack_size)
+                reallocateStack();
 
-          int ridx = rule_index [r];
-         // printf ("*** reduce using rule %d %s ::=", r + 1, spell[rule_info [ridx]]);
-          ++ridx;
-          for (int i = ridx; i < ridx + rhs [r]; ++i)
+            sym_stack [tos] = yylval;
+            state_stack [tos] = act;
+            yytoken = -1;
+        }
+
+        else if (act < 0)
+        {
+            int r = - act - 1;
+
+            int ridx = rule_index [r];
+            // printf ("*** reduce using rule %d %s ::=", r + 1, spell[rule_info [ridx]]);
+            ++ridx;
+            for (int i = ridx; i < ridx + rhs [r]; ++i)
             {
-              int symbol = rule_info [i];
-             // if (const char *name = spell [symbol])
-                //printf (" %s", name);
-             // else
-               // printf (" #%d", symbol);
+                int symbol = rule_info [i];
+                // if (const char *name = spell [symbol])
+                    //printf (" %s", name);
+                // else
+                    //printf (" #%d", symbol);
             }
-          //printf ("\n");
+            //printf ("\n");
 
-          tos -= rhs [r];
-          act = state_stack [tos++];
+            tos -= rhs [r];
+            act = state_stack [tos++];
 
-          switch (r) {
+            switch (r) {
 ./
 
 translation_unit ::= statements_list ;
@@ -298,19 +305,25 @@ atom ::= LT_INTEGER ;
 atom ::= LT_FLOAT ;
 atom ::= LT_COMPLEX ;
 atom ::= LT_STRING ;
-atom ::= IDENTIFIER ;
+atom ::= TK_IDENTIFIER ;
 atom ::= DL_LEFT_PAREN DL_RIGHT_PAREN ;
 -- TODO: change to // testlist_comp: test ( comp_for | (',' test)* [','] )
 atom ::= DL_LEFT_PAREN testlist DL_RIGHT_PAREN ;
 atom ::= DL_LEFT_BRACKET DL_RIGHT_BRACKET ;
 atom ::= DL_LEFT_BRACKET list_initializer DL_RIGHT_BRACKET ;
 
-trailer ::= OP_DOT IDENTIFIER ;
+trailer ::= OP_DOT TK_IDENTIFIER ;
 trailer ::= DL_LEFT_PAREN DL_RIGHT_PAREN ;
 trailer ::= DL_LEFT_PAREN arguments_list DL_RIGHT_PAREN ;
+trailer ::= DL_LEFT_BRACKET subscript_list DL_RIGHT_BRACKET ;
 
--- TODO: "func(args)" expressions
--- TODO: "array[index]" expressions
+subscript ::= OP_DOT OP_DOT OP_DOT ;
+subscript ::= test ;
+--! TODO: add rule // subscript ::= [test] ':' [test] [sliceop]
+subscript_list_head ::= subscript ;
+subscript_list_head ::= subscript_list_head DL_COMMA subscript ;
+subscript_list ::= subscript_list_head ;
+subscript_list ::= subscript_list_head DL_COMMA ;
 
 trailers_list ::= trailer ;
 trailers_list ::= trailers_list trailer ;
@@ -321,6 +334,21 @@ primary_expression ::= atom trailers_list ;
 --postfix_expression ::= primary_expression ;
 --postfix_expression ::= function_call ;
 --postfix_expression ::= postfix_expression DOT IDENTIFIER ;
+
+-- Control flow begin
+yield_expression ::= KW_YIELD ;
+yield_expression ::= KW_YIELD testlist ;
+
+contol_flow_statement ::= KW_BREAK ;
+contol_flow_statement ::= KW_CONTINUE ;
+contol_flow_statement ::= KW_RETURN ;
+contol_flow_statement ::= KW_RETURN testlist ;
+contol_flow_statement ::= KW_RAISE ;
+contol_flow_statement ::= KW_RAISE test ;
+contol_flow_statement ::= KW_RAISE test DL_COMMA test ;
+contol_flow_statement ::= KW_RAISE test DL_COMMA test DL_COMMA test ;
+contol_flow_statement ::= yield_expression ;
+-- Control flow end
 
 -- Expressions begin
 
@@ -404,8 +432,8 @@ list_initializer ::= test list_for ;
 list_initializer ::= testlist ;
 -- List and dict end
 
-qualified_name ::= qualified_name OP_DOT IDENTIFIER ;
-qualified_name ::= IDENTIFIER ;
+qualified_name ::= qualified_name OP_DOT TK_IDENTIFIER ;
+qualified_name ::= TK_IDENTIFIER ;
 
 qualified_names_list_head ::= qualified_names_list_head qualified_name DL_COMMA ;
 qualified_names_list_head ::= qualified_name DL_COMMA ;
@@ -422,6 +450,7 @@ print_statement ::= KW_PRINT testlist ;
 small_statement ::= import_statement ;
 small_statement ::= expression_statement ;
 small_statement ::= print_statement ;
+small_statement ::= contol_flow_statement ;
 small_statement ::= KW_PASS ;
 
 small_statements_list ::= small_statements_list DL_SEMICOLON small_statement ;
@@ -440,12 +469,12 @@ decorator ::= OP_PLUSHKA qualified_name DL_LEFT_PAREN arguments_list DL_RIGHT_PA
 -- Decorated end
 
 -- Class begin
-class_definition ::= KW_CLASS IDENTIFIER DL_COLON suite;
-class_definition ::= KW_CLASS IDENTIFIER DL_LEFT_PAREN qualified_names_list DL_RIGHT_PAREN DL_COLON suite;
+class_definition ::= KW_CLASS TK_IDENTIFIER DL_COLON suite;
+class_definition ::= KW_CLASS TK_IDENTIFIER DL_LEFT_PAREN qualified_names_list DL_RIGHT_PAREN DL_COLON suite;
 -- Class end
 
 -- function definition begin
-function_param_def ::= IDENTIFIER ;
+function_param_def ::= TK_IDENTIFIER ;
 function_param_def ::= DL_LEFT_PAREN function_param_list DL_RIGHT_PAREN ;
 function_param_list_head ::= function_param_list_head DL_COMMA function_param_def ;
 function_param_list ::= function_param_list_head ;
@@ -462,11 +491,11 @@ function_param_full_list ::= function_param_full_list_head DL_COMMA ;
 --              ('*' NAME [',' '**' NAME] | '**' NAME) |
 --              fpdef ['=' test] (',' fpdef ['=' test])* [','])
 var_arguments_list ::= function_param_full_list ;
-var_arguments_list ::= function_param_full_list_head DL_COMMA OP_POWER IDENTIFIER ;
+var_arguments_list ::= function_param_full_list_head DL_COMMA OP_POWER TK_IDENTIFIER ;
 
 function_parameters ::= DL_LEFT_PAREN DL_RIGHT_PAREN ;
 function_parameters ::= DL_LEFT_PAREN var_arguments_list DL_RIGHT_PAREN ;
-function_definition ::= KW_DEF IDENTIFIER function_parameters DL_COLON suite ;
+function_definition ::= KW_DEF TK_IDENTIFIER function_parameters DL_COLON suite ;
 
 -- function definition end
 
@@ -536,15 +565,19 @@ statements_list ::= common_statement ;
 statements_list ::= statements_list common_statement ;
 
 /.
-          } // switch
+            } // switch
 
-          state_stack [tos] = nt_action (act, lhs [r] - TERMINAL_COUNT);
+            state_stack [tos] = nt_action (act, lhs [r] - TERMINAL_COUNT);
         }
-
         else
         {
-          // ### ERROR RECOVERY HERE
-          break;
+            // ### ERROR RECOVERY HERE
+            fprintf (stderr, "%s:%d: Syntax Error\n", qPrintable(context.fileName), context.line);
+            do {
+                yytoken = nextToken();
+                if (yytoken == EOF_SYMBOL)
+                    return false;
+            } while ((yytoken != DL_NEWLINE) && (yytoken != EOF_SYMBOL));
         }
     }
 
@@ -563,21 +596,21 @@ int main()
 {
 #if 0 // dump the Python grammar
     for (int r = 0; r < PyGrammar::RULE_COUNT; ++r)
-      {
+    {
         int ridx = PyGrammar::rule_index [r];
         int rhs = PyGrammar::rhs [r];
         printf ("%3d) %s ::=", r + 1, PyGrammar::spell[PyGrammar::rule_info [ridx]]);
         ++ridx;
         for (int i = ridx; i < ridx + rhs; ++i)
-          {
+        {
             int symbol = PyGrammar::rule_info [i];
             if (const char *name = PyGrammar::spell [symbol])
-              printf (" %s", name);
+                printf (" %s", name);
             else
-              printf (" #%d", symbol);
-          }
+                printf (" #%d", symbol);
+        }
         printf ("\n");
-      }
+    }
 #endif
 
     PyParser parser;
