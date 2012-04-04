@@ -10,6 +10,10 @@ import atexit
 from signal import SIGTERM
 
 class Daemon:
+    """
+    A generic daemon class.
+    Usage: subclass the Daemon class and override the run() method
+    """
 
     def __init__(self, pidfile, stdin='/dev/null', stdout='/dev/null', stderr='/dev/null'):
         self.stdin = stdin
@@ -18,6 +22,11 @@ class Daemon:
         self.pidfile = pidfile
 
     def daemonize(self):
+        """
+        do the UNIX double-fork magic, see Stevens' "Advanced
+        Programming in the UNIX Environment" for details (ISBN 0201563177)
+        http://www.erlenstar.demon.co.uk/unix/faq_2.html#SEC16
+        """
 
         try:
             pid = os.fork()
@@ -57,6 +66,9 @@ class Daemon:
         os.remove(self.pidfile)
 
     def start(self):
+        """
+        start the daemon
+        """
         # Check for a pidfile to see if the daemon already runs
         try:
             pf = file(self.pidfile,'r')
@@ -73,6 +85,9 @@ class Daemon:
         self.run()
 
     def stop(self):
+        """
+        stop the daemon
+        """
         #get process id from pidfile
         try:
             pf = file(self.pidfile,'r')
@@ -100,8 +115,15 @@ class Daemon:
                 sys.exit(1)
 
     def restart(self):
+        """
+        restart the daemon
+        """
         self.stop()
         self.start()
 
     def run(self):
-        pass
+        """
+        You should override this method when you subclass Daemon.
+        It will be called after process has been
+        daemonized by start() or restart()
+        """
