@@ -39,8 +39,9 @@
 --
 ----------------------------------------------------------------------------
 
-%parser PyParserTable
-%merged_output python.cpp
+%parser PyGrammar
+%decl pyparser_p.h
+%impl pyparser.cpp
 
 %token IDENTIFIER
 
@@ -58,6 +59,7 @@
 %token KW_AS
 
 %token KW_WHILE
+%token KW_FOR
 %token KW_IF
 %token KW_ELIF
 %token KW_ELSE
@@ -84,6 +86,8 @@
 %token DL_DEDENT
 %token DL_RIGHT_PAREN
 %token DL_LEFT_PAREN
+%token DL_LEFT_BRACKET
+%token DL_RIGHT_BRACKET
 %token DL_SEMICOLON
 %token DL_COMMA
 
@@ -99,6 +103,7 @@
 %token OP_ASSIGN
 %token OP_POWER
 %token OP_MOD
+%token OP_PLUSHKA
 
 %token ERROR
 %start translation_unit
@@ -210,6 +215,9 @@ inline void PyParser::reallocateStack()
 
 /.
 
+#include "pygrammar_p.h"
+#include "pyparser_p.h"
+
 PyParser::PyParser():
     tos(0),
     stack_size(0),
@@ -264,17 +272,17 @@ bool PyParser::parse()
           int r = - act - 1;
 
           int ridx = rule_index [r];
-          printf ("*** reduce using rule %d %s ::=", r + 1, spell[rule_info [ridx]]);
+         // printf ("*** reduce using rule %d %s ::=", r + 1, spell[rule_info [ridx]]);
           ++ridx;
           for (int i = ridx; i < ridx + rhs [r]; ++i)
             {
               int symbol = rule_info [i];
-              if (const char *name = spell [symbol])
-                printf (" %s", name);
-              else
-                printf (" #%d", symbol);
+             // if (const char *name = spell [symbol])
+                //printf (" %s", name);
+             // else
+               // printf (" #%d", symbol);
             }
-          printf ("\n");
+          //printf ("\n");
 
           tos -= rhs [r];
           act = state_stack [tos++];
@@ -294,10 +302,13 @@ atom ::= IDENTIFIER ;
 atom ::= DL_LEFT_PAREN DL_RIGHT_PAREN ;
 -- TODO: change to // testlist_comp: test ( comp_for | (',' test)* [','] )
 atom ::= DL_LEFT_PAREN testlist DL_RIGHT_PAREN ;
+atom ::= DL_LEFT_BRACKET DL_RIGHT_BRACKET ;
+atom ::= DL_LEFT_BRACKET list_initializer DL_RIGHT_BRACKET ;
 
 trailer ::= OP_DOT IDENTIFIER ;
 trailer ::= DL_LEFT_PAREN DL_RIGHT_PAREN ;
 trailer ::= DL_LEFT_PAREN arguments_list DL_RIGHT_PAREN ;
+
 -- TODO: "func(args)" expressions
 -- TODO: "array[index]" expressions
 
@@ -321,20 +332,21 @@ test_of_binary ::= term ;
 test_of_binary ::= test_of_binary OP_PLUS term ;
 test_of_binary ::= test_of_binary OP_MINUS term ;
 test_of_binary ::= test_of_binary OP_MOD term ;
-test_of_binary ::= test_of_binary comparison term ;
-comparison ::= OP_EQUAL ;
-comparison ::= OP_NOT_EQUAL ;
-comparison ::= OP_LT ;
-comparison ::= OP_GT ;
-comparison ::= OP_LE ;
-comparison ::= OP_GE ;
-comparison ::= KW_IN ;
-comparison ::= KW_NOT KW_IN ;
-comparison ::= KW_IS ;
-comparison ::= KW_IS KW_NOT ;
+comparison ::= test_of_binary ;
+comparison ::= comparison comparison_operator test_of_binary ;
+comparison_operator ::= OP_EQUAL ;
+comparison_operator ::= OP_NOT_EQUAL ;
+comparison_operator ::= OP_LT ;
+comparison_operator ::= OP_GT ;
+comparison_operator ::= OP_LE ;
+comparison_operator ::= OP_GE ;
+comparison_operator ::= KW_IN ;
+comparison_operator ::= KW_NOT KW_IN ;
+comparison_operator ::= KW_IS ;
+comparison_operator ::= KW_IS KW_NOT ;
 -- comparison operators: '<'|'>'|'=='|'>='|'<='|'<>'|'!='|'in'|'not' 'in'|'is'|'is' 'not'
 
-test_of_not ::= test_of_binary ;
+test_of_not ::= comparison ;
 test_of_not ::= KW_NOT test_of_not ;
 
 test_of_or ::= test_of_not ;
@@ -363,7 +375,34 @@ arguments_list ::= arguments_list_head DL_COMMA OP_POWER test ;
 expression_statement ::= testlist ;
 expression_statement ::= expression_statement OP_ASSIGN testlist ;
 
+expressions_list_head ::= test_of_binary ;
+expressions_list_head ::= expressions_list_head DL_COMMA test_of_binary ;
+expressions_list ::= expressions_list_head ;
+expressions_list ::= expressions_list_head DL_COMMA ;
+
 -- Expressions end
+
+-- List and dict begin
+
+--test_safe ::= test_of_or ;
+--! TODO: add test_safe ::= lambda_definition_safe ;
+
+--testlist_safe_head ::= test_safe ;
+--testlist_safe_head ::= testlist_safe DL_COMMA test_safe ;
+--testlist_safe ::= testlist_safe_head ;
+--testlist_safe ::= testlist_safe_head DL_COMMA ;
+
+--! TODO: replace testlist with testlist_safe at list_for, replace test with test_safe at list_if
+list_if ::= KW_IF test ;
+list_if ::= KW_IF test list_iteration ;
+list_for_impl ::= KW_FOR expressions_list KW_IN testlist;
+list_iteration ::= list_for ;
+list_iteration ::= list_if ;
+list_for ::= list_for_impl ;
+list_for ::= list_for_impl list_iteration ;
+list_initializer ::= test list_for ;
+list_initializer ::= testlist ;
+-- List and dict end
 
 qualified_name ::= qualified_name OP_DOT IDENTIFIER ;
 qualified_name ::= IDENTIFIER ;
@@ -390,9 +429,20 @@ small_statements_list ::= small_statement ;
 simple_statement ::= small_statements_list DL_SEMICOLON DL_NEWLINE ;
 simple_statement ::= small_statements_list DL_NEWLINE ;
 
--- TODO: add class testlist (need for base classes support)
+-- Decorated begin
+decorated ::= decorators class_definition ;
+decorated ::= decorators function_definition ;
+decorators ::= decorator ;
+decorators ::= decorators decorator ;
+decorator ::= OP_PLUSHKA qualified_name DL_NEWLINE ;
+decorator ::= OP_PLUSHKA qualified_name DL_LEFT_PAREN arguments_list DL_RIGHT_PAREN DL_NEWLINE ;
+
+-- Decorated end
+
+-- Class begin
 class_definition ::= KW_CLASS IDENTIFIER DL_COLON suite;
 class_definition ::= KW_CLASS IDENTIFIER DL_LEFT_PAREN qualified_names_list DL_RIGHT_PAREN DL_COLON suite;
+-- Class end
 
 -- function definition begin
 function_param_def ::= IDENTIFIER ;
@@ -438,10 +488,16 @@ try_statement ::= KW_TRY DL_COLON suite KW_FINALLY DL_COLON suite ;
 try_statement ::= KW_TRY DL_COLON suite except_block ;
 -- try statement end
 
--- while statement begin
+-- For begin
+for_block ::= KW_FOR expressions_list KW_IN testlist DL_COLON suite ;
+for_statement ::= for_block ;
+for_statement ::= for_block KW_ELSE DL_COLON suite ;
+-- For end
+
+-- While begin
 while_statement ::= KW_WHILE test DL_COLON suite ;
 while_statement ::= KW_WHILE test DL_COLON suite KW_ELSE DL_COLON suite ;
--- while statement end
+-- While end
 
 -- if statement begin
 -- Grammar // if_stmt: 'if' test ':' suite ('elif' test ':' suite)* ['else' ':' suite]
@@ -463,14 +519,14 @@ newlines_list ::= DL_NEWLINE ;
 newlines_list ::= newlines_list DL_NEWLINE ;
 suite ::= newlines_list DL_INDENT statements_list DL_DEDENT;
 
---compound_statement ::= if_statement ;
---compound_statement ::= while_statement ;
---compound_statement ::= for_statement ;
 compound_statement ::= if_statement ;
 compound_statement ::= while_statement ;
+compound_statement ::= for_statement ;
 compound_statement ::= try_statement ;
+--compound_statement ::= with_statement ;
 compound_statement ::= function_definition ;
 compound_statement ::= class_definition ;
+compound_statement ::= decorated ;
 
 common_statement ::= simple_statement ;
 common_statement ::= compound_statement ;
@@ -485,7 +541,7 @@ statements_list ::= statements_list common_statement ;
           state_stack [tos] = nt_action (act, lhs [r] - TERMINAL_COUNT);
         }
 
-      else
+        else
         {
           // ### ERROR RECOVERY HERE
           break;
@@ -506,16 +562,16 @@ statements_list ::= statements_list common_statement ;
 int main()
 {
 #if 0 // dump the Python grammar
-    for (int r = 0; r < PyParserTable::RULE_COUNT; ++r)
+    for (int r = 0; r < PyGrammar::RULE_COUNT; ++r)
       {
-        int ridx = PyParserTable::rule_index [r];
-        int rhs = PyParserTable::rhs [r];
-        printf ("%3d) %s ::=", r + 1, PyParserTable::spell[PyParserTable::rule_info [ridx]]);
+        int ridx = PyGrammar::rule_index [r];
+        int rhs = PyGrammar::rhs [r];
+        printf ("%3d) %s ::=", r + 1, PyGrammar::spell[PyGrammar::rule_info [ridx]]);
         ++ridx;
         for (int i = ridx; i < ridx + rhs; ++i)
           {
-            int symbol = PyParserTable::rule_info [i];
-            if (const char *name = PyParserTable::spell [symbol])
+            int symbol = PyGrammar::rule_info [i];
+            if (const char *name = PyGrammar::spell [symbol])
               printf (" %s", name);
             else
               printf (" #%d", symbol);

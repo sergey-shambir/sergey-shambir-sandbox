@@ -108,11 +108,43 @@ escapednewline \\[\n]
         yyterminate();
     }
 
+<ONSTATEMENT>\"\"\" {
+        //! TODO: May be refactor it? Anyway, it works.
+        QString qtext;
+        qtext.reserve(100);
+        int matching[3];
+        matching[1] = yyinput();
+        matching[2] = yyinput();
+        for (;;) {
+            matching[0] = matching[1];
+            matching[1] = matching[2];
+            matching[2] = yyinput();
+            if ((matching[2] == 0) || (matching[2] == EOF))
+                return ERROR;
+            if (matching[0] == '\\') {
+                qtext += matching[0];
+                qtext += matching[1];
+                matching[0] = matching[1];
+                matching[1] = matching[2];
+                matching[2] = yyinput();
+                continue;
+            }
+            if ((matching[0] == '\"') && (matching[1] == '\"') && (matching[2] == '\"')) {
+                yylval.s = intern(qtext);
+                puts(qtext.toAscii());
+                return LT_STRING;
+            }
+            if (qtext.size() == qtext.capacity())
+                qtext.reserve(qtext.size() + 100);
+            qtext += matching[0];
+        }
+    }
+
 <ONSTATEMENT>[ \t]+ { /* skip */ }
 
 <ONSTATEMENT>{simplestring} {
         QString qtext(yytext);
-        yylval.s = intern (qtext.mid(1, qtext.size()));
+        yylval.s = intern (qtext.mid(1, qtext.size() - 2));
         return LT_STRING;
     }
 
@@ -120,6 +152,7 @@ escapednewline \\[\n]
 <ONSTATEMENT>"from" { return KW_FROM; }
 <ONSTATEMENT>"as" { return KW_AS; }
 <ONSTATEMENT>"while" { return KW_WHILE; }
+<ONSTATEMENT>"for" { return KW_FOR; }
 <ONSTATEMENT>"if" { return KW_IF; }
 <ONSTATEMENT>"elif" { return KW_ELIF; }
 <ONSTATEMENT>"else" { return KW_ELSE; }
@@ -146,6 +179,8 @@ escapednewline \\[\n]
 <ONSTATEMENT>"," { return DL_COMMA; }
 <ONSTATEMENT>"(" { return DL_LEFT_PAREN; }
 <ONSTATEMENT>")" { return DL_RIGHT_PAREN; }
+<ONSTATEMENT>"[" { return DL_LEFT_BRACKET; }
+<ONSTATEMENT>"]" { return DL_RIGHT_BRACKET; }
 <ONSTATEMENT>";" { return DL_SEMICOLON; }
 
 <ONSTATEMENT>"+" { return OP_PLUS; }
@@ -161,6 +196,7 @@ escapednewline \\[\n]
 <ONSTATEMENT>"." { return OP_DOT; }
 <ONSTATEMENT>"**" { return OP_POWER; }
 <ONSTATEMENT>"%" { return OP_MOD; }
+<ONSTATEMENT>"@" { return OP_PLUSHKA; }
 
 <ONSTATEMENT>#.* {
   /* skip */

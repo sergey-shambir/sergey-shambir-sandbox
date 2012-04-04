@@ -1,6 +1,13 @@
 QT = core
 TARGET = python.bin
-SOURCES += python.cpp
+
+HEADERS += \
+        pygrammar_p.h \
+        pyparser_p.h
+
+SOURCES += \
+        pygrammar.cpp \
+        pyparser.cpp
 
 OTHER_FILES += \
     py-lex.l \
