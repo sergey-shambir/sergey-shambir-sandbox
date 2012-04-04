@@ -91,7 +91,7 @@ escapednewline \\[\n]
         }
         if (context.checkDedent()) {
             yyunput(*yytext, yytext);
-            /* we can't return to INITIAL state here */
+            /* we can't return to INITIAL state here, becouse we can meet several DL_DEDENT at single line */
             return DL_DEDENT;
         }
         yyunput(*yytext, yytext);
@@ -120,7 +120,7 @@ escapednewline \\[\n]
             matching[1] = matching[2];
             matching[2] = yyinput();
             if ((matching[2] == 0) || (matching[2] == EOF))
-                return ERROR;
+                return TK_ERROR;
             if (matching[0] == '\\') {
                 qtext += matching[0];
                 qtext += matching[1];
@@ -158,6 +158,10 @@ escapednewline \\[\n]
 <ONSTATEMENT>"else" { return KW_ELSE; }
 <ONSTATEMENT>"break" { return KW_BREAK; }
 <ONSTATEMENT>"continue" { return KW_CONTINUE; }
+<ONSTATEMENT>"return" { return KW_RETURN; }
+<ONSTATEMENT>"yield" { return KW_YIELD; }
+<ONSTATEMENT>"raise" { return KW_RAISE; }
+
 <ONSTATEMENT>"try" { return KW_TRY; }
 <ONSTATEMENT>"except" { return KW_EXCEPT; }
 <ONSTATEMENT>"finally" { return KW_FINALLY; }
@@ -204,7 +208,7 @@ escapednewline \\[\n]
 
 <ONSTATEMENT>[_a-zA-Z][_a-zA-Z0-9]* {
   yylval.s = intern (yytext);
-  return IDENTIFIER;
+  return TK_IDENTIFIER;
 }
 
 <ONSTATEMENT>{icst} {
@@ -269,7 +273,7 @@ escapednewline \\[\n]
 
 <ONSTATEMENT>. {
   fprintf (stderr, "invalid char: %d\n", yytext [0]);
-  return ERROR;
+  return TK_ERROR;
 }
 
 
