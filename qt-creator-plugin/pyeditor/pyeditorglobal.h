@@ -1,0 +1,12 @@
+#ifndef GLOBAL_H_21c2223e_ab34_474a_925f_608938d99a54
+#define GLOBAL_H_21c2223e_ab34_474a_925f_608938d99a54
+
+#include <QtGlobal>
+
+#if defined(PYEDITOR_LIBRARY)
+#  define PYEDITOR_EXPORT Q_DECL_EXPORT
+#else
+#  define PYEDITOR_EXPORT Q_DECL_IMPORT
+#endif
+
+#endif // GLOBAL_H_21c2223e_ab34_474a_925f_608938d99a54
