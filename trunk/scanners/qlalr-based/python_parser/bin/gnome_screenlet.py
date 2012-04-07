@@ -23,7 +23,8 @@ class TimeTrackerScreenlet(screenlets.Screenlet):
         self.started = None
 
     def on_draw(self, ctx):
-        self.draw_scaled_image(ctx, 0, 0, self.theme_dir + '/' + self.image, self.width, self.height)
+        self.draw_scaled_image(ctx, 0, 0, self.theme_dir + '/' +
+        self.image, self.width, self.height)
 
     def on_mouse_down(self, event):
         if self.on:
@@ -33,7 +34,8 @@ class TimeTrackerScreenlet(screenlets.Screenlet):
         else:
             if self.started:
                 length = datetime.datetime.now() - self.started
-                screenlets.show_message(None, '%s seconds' % length.seconds, 'Time')
+                screenlets.show_message(None, '%s seconds' %
+                                        length.seconds, 'Time')
                 self.started = None
             self.image = 'start.png'
             self.on = True
