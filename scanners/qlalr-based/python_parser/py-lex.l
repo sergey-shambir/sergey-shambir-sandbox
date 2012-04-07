@@ -46,7 +46,7 @@
 %}
 
 %option noyywrap
-%x ONSTATEMENT
+%x STMT
 
 hexditit [0-9a-fA-F]
 octdigit [0-7]
@@ -76,7 +76,7 @@ escapednewline \\\n[ \t]*
 <*>{escapednewline}                       { /* skip */ }
 <*>[\r]+                                { /* skip */ }
 
-<*>\n         {
+<*>{newline}    {
         if (context.implicitJoiningLevel == 0) {
             ++context.line;
             context.indentCurrent = 0;
@@ -94,7 +94,7 @@ escapednewline \\\n[ \t]*
 <INITIAL>.           {
         if (context.checkIndent()) {
             yyunput(*yytext, yytext);
-            BEGIN(ONSTATEMENT);
+            BEGIN(STMT);
             return DL_INDENT;
         }
         if (context.checkDedent()) {
@@ -103,7 +103,7 @@ escapednewline \\\n[ \t]*
             return DL_DEDENT;
         }
         yyunput(*yytext, yytext);
-        BEGIN(ONSTATEMENT);
+        BEGIN(STMT);
     }
 
 <INITIAL><<EOF>>     {
@@ -116,7 +116,7 @@ escapednewline \\\n[ \t]*
         yyterminate();
     }
 
-<ONSTATEMENT>\"\"\" {
+<STMT>\"\"\" {
         //! TODO: May be refactor it? Anyway, it works.
         QString qtext;
         qtext.reserve(100);
@@ -147,7 +147,7 @@ escapednewline \\\n[ \t]*
         }
     }
 
-<ONSTATEMENT>\'\'\' {
+<STMT>\'\'\' {
         //! TODO: May be refactor it? Anyway, it works.
         QString qtext;
         qtext.reserve(100);
@@ -178,165 +178,176 @@ escapednewline \\\n[ \t]*
         }
     }
 
-<ONSTATEMENT>[ \t]+ { /* skip */ }
+<STMT>[ \t]+ { /* skip */ }
 
-<ONSTATEMENT>{simplestring} {
+<STMT>{simplestring} {
         QString qtext(yytext);
         yylval.s = intern (qtext.mid(1, qtext.size() - 2));
         return LT_STRING;
     }
 
-<ONSTATEMENT>"import" { return KW_IMPORT; }
-<ONSTATEMENT>"from" { return KW_FROM; }
-<ONSTATEMENT>"as" { return KW_AS; }
-<ONSTATEMENT>"with" { return KW_WITH; }
-<ONSTATEMENT>"while" { return KW_WHILE; }
-<ONSTATEMENT>"for" { return KW_FOR; }
-<ONSTATEMENT>"if" { return KW_IF; }
-<ONSTATEMENT>"elif" { return KW_ELIF; }
-<ONSTATEMENT>"else" { return KW_ELSE; }
-<ONSTATEMENT>"break" { return KW_BREAK; }
-<ONSTATEMENT>"continue" { return KW_CONTINUE; }
-<ONSTATEMENT>"return" { return KW_RETURN; }
-<ONSTATEMENT>"yield" { return KW_YIELD; }
-<ONSTATEMENT>"raise" { return KW_RAISE; }
+<STMT>"import" { return KW_IMPORT; }
+<STMT>"from" { return KW_FROM; }
+<STMT>"as" { return KW_AS; }
+<STMT>"with" { return KW_WITH; }
+<STMT>"while" { return KW_WHILE; }
+<STMT>"for" { return KW_FOR; }
+<STMT>"if" { return KW_IF; }
+<STMT>"elif" { return KW_ELIF; }
+<STMT>"else" { return KW_ELSE; }
+<STMT>"break" { return KW_BREAK; }
+<STMT>"continue" { return KW_CONTINUE; }
+<STMT>"return" { return KW_RETURN; }
+<STMT>"yield" { return KW_YIELD; }
+<STMT>"raise" { return KW_RAISE; }
 
-<ONSTATEMENT>"try" { return KW_TRY; }
-<ONSTATEMENT>"except" { return KW_EXCEPT; }
-<ONSTATEMENT>"finally" { return KW_FINALLY; }
-<ONSTATEMENT>"pass" { return KW_PASS; }
-<ONSTATEMENT>"print" { return KW_PRINT; }
-<ONSTATEMENT>"class" { return KW_CLASS; }
-<ONSTATEMENT>"def" { return KW_DEF; }
-<ONSTATEMENT>"lambda" { return KW_LAMBDA; }
+<STMT>"try" { return KW_TRY; }
+<STMT>"except" { return KW_EXCEPT; }
+<STMT>"finally" { return KW_FINALLY; }
+<STMT>"pass" { return KW_PASS; }
+<STMT>"print" { return KW_PRINT; }
+<STMT>"class" { return KW_CLASS; }
+<STMT>"def" { return KW_DEF; }
+<STMT>"lambda" { return KW_LAMBDA; }
 
-<ONSTATEMENT>"or" { return KW_OR; }
-<ONSTATEMENT>"is" { return KW_IS; }
-<ONSTATEMENT>"in" { return KW_IN; }
-<ONSTATEMENT>"not" { return KW_NOT; }
+<STMT>"and" { return KW_AND; }
+<STMT>"or" { return KW_OR; }
+<STMT>"xor" { return KW_XOR; }
+<STMT>"is" { return KW_IS; }
+<STMT>"in" { return KW_IN; }
+<STMT>"not" { return KW_NOT; }
 
-<ONSTATEMENT>"None" { return LT_NONE; }
-<ONSTATEMENT>"True" { return LT_BOOLEAN; }
-<ONSTATEMENT>"False" { return LT_BOOLEAN; }
+<STMT>"None" { return LT_NONE; }
+<STMT>"True" { return LT_BOOLEAN; }
+<STMT>"False" { return LT_BOOLEAN; }
 
-<ONSTATEMENT>":" { return DL_COLON; }
-<ONSTATEMENT>"," { return DL_COMMA; }
-<ONSTATEMENT>"(" {
+<STMT>"(" {
         ++context.implicitJoiningLevel;
         return DL_LEFT_PAREN;
     }
-<ONSTATEMENT>")" {
+<STMT>")" {
         --context.implicitJoiningLevel;
         return DL_RIGHT_PAREN;
     }
-<ONSTATEMENT>"[" {
+<STMT>"[" {
         ++context.implicitJoiningLevel;
         return DL_LEFT_BRACKET;
     }
-<ONSTATEMENT>"]" {
+<STMT>"]" {
         --context.implicitJoiningLevel;
         return DL_RIGHT_BRACKET;
     }
-<ONSTATEMENT>"{" {
+<STMT>"{" {
         ++context.implicitJoiningLevel;
         return DL_LEFT_BRACE;
     }
-<ONSTATEMENT>"}" {
+<STMT>"}" {
         --context.implicitJoiningLevel;
         return DL_RIGHT_BRACE;
     }
-<ONSTATEMENT>";" { return DL_SEMICOLON; }
+<STMT>":" { return DL_COLON; }
+<STMT>"," { return DL_COMMA; }
+<STMT>";" { return DL_SEMICOLON; }
+<STMT>"`" { return DL_BACKQUOTE; }
 
-<ONSTATEMENT>"+=" { return OP_AUG_PLUS; }
-<ONSTATEMENT>"-=" { return OP_AUG_MINUS; }
-<ONSTATEMENT>"**=" { return OP_AUG_POWER; }
-<ONSTATEMENT>"*=" { return OP_AUG_MUL; }
-<ONSTATEMENT>"//=" { return OP_AUG_FLOORDIV; }
-<ONSTATEMENT>"/=" { return OP_AUG_DIV; }
-<ONSTATEMENT>"%=" { return OP_AUG_MOD; }
+<STMT>"+=" { return OP_AUG_PLUS; }
+<STMT>"-=" { return OP_AUG_MINUS; }
+<STMT>"**=" { return OP_AUG_POWER; }
+<STMT>"*=" { return OP_AUG_MUL; }
+<STMT>"//=" { return OP_AUG_FLOORDIV; }
+<STMT>"/=" { return OP_AUG_DIV; }
+<STMT>"%=" { return OP_AUG_MOD; }
+<STMT>"&=" { return OP_AUG_AND; }
+<STMT>"|=" { return OP_AUG_OR; }
+<STMT>"^=" { return OP_AUG_XOR; }
+<STMT>"<<=" { return OP_AUG_LSHIFT; }
+<STMT>">>=" { return OP_AUG_RSHIFT; }
 
-<ONSTATEMENT>"+" { return OP_PLUS; }
-<ONSTATEMENT>"-" { return OP_MINUS; }
-<ONSTATEMENT>"==" { return OP_EQUAL; }
-<ONSTATEMENT>"!=" { return OP_NOT_EQUAL; }
-<ONSTATEMENT>"<>" { return OP_NOT_EQUAL; }
-<ONSTATEMENT>"=" { return OP_ASSIGN; }
-<ONSTATEMENT>">=" { return OP_GE; }
-<ONSTATEMENT>"<=" { return OP_LE; }
-<ONSTATEMENT>">" { return OP_GT; }
-<ONSTATEMENT>"<" { return OP_LT; }
-<ONSTATEMENT>"." { return OP_DOT; }
-<ONSTATEMENT>"**" { return OP_POWER; }
-<ONSTATEMENT>"%" { return OP_MOD; }
-<ONSTATEMENT>"*" { return OP_MUL; }
-<ONSTATEMENT>"@" { return OP_AT; }
+<STMT>"+" { return OP_PLUS; }
+<STMT>"-" { return OP_MINUS; }
+<STMT>"==" { return OP_EQUAL; }
+<STMT>"!=" { return OP_NOT_EQUAL; }
+<STMT>"<>" { return OP_NOT_EQUAL; }
+<STMT>"=" { return OP_ASSIGN; }
+<STMT>">=" { return OP_GE; }
+<STMT>"<=" { return OP_LE; }
+<STMT>">" { return OP_GT; }
+<STMT>"<" { return OP_LT; }
+<STMT>"." { return OP_DOT; }
+<STMT>"**" { return OP_POWER; }
+<STMT>"%" { return OP_MOD; }
+<STMT>"*" { return OP_MUL; }
+<STMT>"//" { return OP_FLOORDIV; }
+<STMT>"/" { return OP_DIV; }
+<STMT>"@" { return OP_AT; }
+<STMT>"~" { return OP_COMPLEMENT; }
 
-<ONSTATEMENT>[_a-zA-Z][_a-zA-Z0-9]* {
+<STMT>[_a-zA-Z][_a-zA-Z0-9]* {
   yylval.s = intern (yytext);
   return IDENTIFIER;
 }
 
-<ONSTATEMENT>{icst} {
+<STMT>{icst} {
   yylval.i = (int) strtol (yytext, 0, 0);
   return LT_INTEGER;
 }
 
-<ONSTATEMENT>{icst}[uU] {
+<STMT>{icst}[uU] {
   yylval.u = (unsigned) strtoul (yytext, 0, 0);
   return LT_INTEGER;
 }
 
-<ONSTATEMENT>{icst}[uU][lL] {
+<STMT>{icst}[uU][lL] {
   yylval.ul = strtoul (yytext, 0, 0);
   return LT_INTEGER;
 }
 
-<ONSTATEMENT>{icst}[lL][uU] {
+<STMT>{icst}[lL][uU] {
   yylval.ul = strtoul (yytext, 0, 0);
   return LT_INTEGER;
 }
 
-<ONSTATEMENT>{icst}[lL] {
+<STMT>{icst}[lL] {
   yylval.l = strtol (yytext, 0, 0);
   return LT_INTEGER;
 }
 
-<ONSTATEMENT>{icst}[uU](ll|LL) {
+<STMT>{icst}[uU](ll|LL) {
   yylval.l = strtoull (yytext, 0, 0);
   return LT_INTEGER;
 }
 
-<ONSTATEMENT>{icst}(ll|LL) {
+<STMT>{icst}(ll|LL) {
   yylval.l = strtoll (yytext, 0, 0);
   return LT_INTEGER;
 }
 
-<ONSTATEMENT>{icst}(ll|LL)[uU] {
+<STMT>{icst}(ll|LL)[uU] {
   yylval.l = strtoull (yytext, 0, 0);
   return LT_INTEGER;
 }
 
-<ONSTATEMENT>{fract}{exp}?[jJ] {
+<STMT>{fract}{exp}?[jJ] {
   yylval.f = strtof (yytext, 0);
   return LT_COMPLEX;
 }
 
-<ONSTATEMENT>{digit}+{exp}[jJ] {
+<STMT>{digit}+{exp}[jJ] {
   yylval.f = strtof (yytext, 0);
   return LT_COMPLEX;
 }
 
-<ONSTATEMENT>{fract}{exp}? {
+<STMT>{fract}{exp}? {
   yylval.f = strtof (yytext, 0);
   return LT_FLOAT;
 }
 
-<ONSTATEMENT>{digit}+{exp} {
+<STMT>{digit}+{exp} {
   yylval.f = strtof (yytext, 0);
   return LT_FLOAT;
 }
 
-<ONSTATEMENT>. {
+<STMT>. {
   fprintf (stderr, "invalid char: %d, or %c\n", (int) yytext [0], (char)(yytext[0]));
   return ERROR;
 }
