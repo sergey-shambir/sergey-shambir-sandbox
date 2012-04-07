@@ -43,8 +43,8 @@
 %decl pyparser_p.h
 %impl pyparser.cpp
 
-%token TK_IDENTIFIER
-%token TK_ERROR
+%token IDENTIFIER
+%token ERROR
 
 -- literals have LT_ prefix
 %token LT_NONE
@@ -59,6 +59,7 @@
 %token KW_FROM
 %token KW_AS
 
+%token KW_WITH
 %token KW_WHILE
 %token KW_FOR
 %token KW_IF
@@ -78,6 +79,7 @@
 
 %token KW_CLASS
 %token KW_DEF
+%token KW_LAMBDA
 
 %token KW_OR
 %token KW_IS
@@ -85,30 +87,42 @@
 %token KW_NOT
 
 -- delimiters have DL_ prefix
+-- string inside "" is token comment
 %token DL_NEWLINE
-%token DL_COLON
 %token DL_INDENT
 %token DL_DEDENT
-%token DL_RIGHT_PAREN
-%token DL_LEFT_PAREN
-%token DL_LEFT_BRACKET
-%token DL_RIGHT_BRACKET
-%token DL_SEMICOLON
-%token DL_COMMA
+%token DL_LEFT_PAREN    "("
+%token DL_RIGHT_PAREN   ")"
+%token DL_LEFT_BRACKET  "["
+%token DL_RIGHT_BRACKET "]"
+%token DL_LEFT_BRACE    "{"
+%token DL_RIGHT_BRACE   "}"
+%token DL_SEMICOLON     ";"
+%token DL_COMMA         ","
+%token DL_COLON         ":"
 
-%token OP_PLUS
-%token OP_MINUS
-%token OP_DOT
-%token OP_EQUAL
-%token OP_NOT_EQUAL
-%token OP_LT
-%token OP_LE
-%token OP_GT
-%token OP_GE
-%token OP_ASSIGN
-%token OP_POWER
-%token OP_MOD
-%token OP_PLUSHKA
+%token OP_AUG_PLUS      "+="
+%token OP_AUG_MINUS     "-="
+%token OP_AUG_POWER     "**="
+%token OP_AUG_MUL       "*="
+%token OP_AUG_FLOORDIV  "//="
+%token OP_AUG_DIV       "/="
+%token OP_AUG_MOD       "%="
+
+%token OP_PLUS "+"
+%token OP_MINUS "-"
+%token OP_DOT "."
+%token OP_EQUAL "=="
+%token OP_NOT_EQUAL "!= or <>"
+%token OP_LT "<"
+%token OP_LE "<="
+%token OP_GT ">"
+%token OP_GE ">="
+%token OP_ASSIGN "="
+%token OP_POWER "**"
+%token OP_MOD "%"
+%token OP_MUL "*"
+%token OP_AT "@"
 
 %start translation_unit
 
@@ -281,14 +295,14 @@ bool PyParser::parse()
             int ridx = rule_index [r];
             // printf ("*** reduce using rule %d %s ::=", r + 1, spell[rule_info [ridx]]);
             ++ridx;
-            for (int i = ridx; i < ridx + rhs [r]; ++i)
-            {
-                int symbol = rule_info [i];
+            //for (int i = ridx; i < ridx + rhs [r]; ++i)
+            //{
+                //int symbol = rule_info [i];
                 // if (const char *name = spell [symbol])
                     //printf (" %s", name);
                 // else
                     //printf (" #%d", symbol);
-            }
+            //}
             //printf ("\n");
 
             tos -= rhs [r];
@@ -305,14 +319,16 @@ atom ::= LT_INTEGER ;
 atom ::= LT_FLOAT ;
 atom ::= LT_COMPLEX ;
 atom ::= LT_STRING ;
-atom ::= TK_IDENTIFIER ;
+atom ::= IDENTIFIER ;
 atom ::= DL_LEFT_PAREN DL_RIGHT_PAREN ;
 -- TODO: change to // testlist_comp: test ( comp_for | (',' test)* [','] )
 atom ::= DL_LEFT_PAREN testlist DL_RIGHT_PAREN ;
 atom ::= DL_LEFT_BRACKET DL_RIGHT_BRACKET ;
 atom ::= DL_LEFT_BRACKET list_initializer DL_RIGHT_BRACKET ;
+atom ::= DL_LEFT_BRACE DL_RIGHT_BRACE ;
+atom ::= DL_LEFT_BRACE dict_or_set_initializer DL_RIGHT_BRACE ;
 
-trailer ::= OP_DOT TK_IDENTIFIER ;
+trailer ::= OP_DOT IDENTIFIER ;
 trailer ::= DL_LEFT_PAREN DL_RIGHT_PAREN ;
 trailer ::= DL_LEFT_PAREN arguments_list DL_RIGHT_PAREN ;
 trailer ::= DL_LEFT_BRACKET subscript_list DL_RIGHT_BRACKET ;
@@ -382,7 +398,7 @@ test_of_or ::= test_of_not KW_OR test_of_not ;
 
 test ::= test_of_or ;
 --test ::= KW_IF or_test KW_ELSE test
---test ::= lambda_definition ;
+test ::= lambda_definition ;
 
 testlist_head ::= test ;
 testlist_head ::= testlist_head DL_COMMA test ;
@@ -400,8 +416,17 @@ arguments_list ::= arguments_list_head ;
 arguments_list ::= arguments_list_head DL_COMMA ;
 arguments_list ::= arguments_list_head DL_COMMA OP_POWER test ;
 
+augment_operator ::= OP_AUG_PLUS ;
+augment_operator ::= OP_AUG_MINUS ;
+augment_operator ::= OP_AUG_POWER ;
+augment_operator ::= OP_AUG_MUL ;
+augment_operator ::= OP_AUG_FLOORDIV ;
+augment_operator ::= OP_AUG_DIV ;
+augment_operator ::= OP_AUG_MOD ;
+
 expression_statement ::= testlist ;
 expression_statement ::= expression_statement OP_ASSIGN testlist ;
+expression_statement ::= expression_statement augment_operator testlist ;
 
 expressions_list_head ::= test_of_binary ;
 expressions_list_head ::= expressions_list_head DL_COMMA test_of_binary ;
@@ -410,8 +435,14 @@ expressions_list ::= expressions_list_head DL_COMMA ;
 
 -- Expressions end
 
+-- Lambda begin
+lambda_definition ::= KW_LAMBDA DL_COLON test ;
+lambda_definition ::= KW_LAMBDA var_arguments_list DL_COLON test ;
+-- Lambda end
+
 -- List and dict begin
 
+-- Safe test is same with test, but can't contain "if ... else ..."
 --test_safe ::= test_of_or ;
 --! TODO: add test_safe ::= lambda_definition_safe ;
 
@@ -421,6 +452,7 @@ expressions_list ::= expressions_list_head DL_COMMA ;
 --testlist_safe ::= testlist_safe_head DL_COMMA ;
 
 --! TODO: replace testlist with testlist_safe at list_for, replace test with test_safe at list_if
+--! See also rule for "old_test" here: http://docs.python.org/reference/grammar.html
 list_if ::= KW_IF test ;
 list_if ::= KW_IF test list_iteration ;
 list_for_impl ::= KW_FOR expressions_list KW_IN testlist;
@@ -430,10 +462,28 @@ list_for ::= list_for_impl ;
 list_for ::= list_for_impl list_iteration ;
 list_initializer ::= test list_for ;
 list_initializer ::= testlist ;
+
+--! TODO: replace "test" with "test_safe". See also rule for "old_test" here: http://docs.python.org/reference/grammar.html
+dict_or_set_if ::= KW_IF test ;
+dict_or_set_if ::= KW_IF test dict_or_set_iteration ;
+dict_or_set_iteration ::= dict_or_set_for ;
+dict_or_set_iteration ::= dict_or_set_if ;
+dict_or_set_for ::= KW_FOR expressions_list KW_IN test_of_or ;
+dict_or_set_for ::= KW_FOR expressions_list KW_IN test_of_or dict_or_set_iteration ;
+
+testpairs_list_head ::= test DL_COLON test ;
+testpairs_list_head ::= testpairs_list_head DL_COMMA test DL_COLON test ;
+testpairs_list ::= testpairs_list_head ;
+testpairs_list ::= testpairs_list_head DL_COMMA ;
+dict_or_set_initializer ::= test DL_COLON test dict_or_set_for ;
+dict_or_set_initializer ::= testpairs_list ;
+dict_or_set_initializer ::= testlist ;
+dict_or_set_initializer ::= test dict_or_set_for ;
+
 -- List and dict end
 
-qualified_name ::= qualified_name OP_DOT TK_IDENTIFIER ;
-qualified_name ::= TK_IDENTIFIER ;
+qualified_name ::= qualified_name OP_DOT IDENTIFIER ;
+qualified_name ::= IDENTIFIER ;
 
 qualified_names_list_head ::= qualified_names_list_head qualified_name DL_COMMA ;
 qualified_names_list_head ::= qualified_name DL_COMMA ;
@@ -442,6 +492,7 @@ qualified_names_list ::= qualified_names_list_head qualified_name ;
 
 import_statement ::= KW_IMPORT qualified_name ;
 import_statement ::= KW_FROM qualified_name KW_IMPORT qualified_name ;
+import_statement ::= KW_FROM qualified_name KW_IMPORT OP_MUL ;
 
 --print_stmt: 'print' ( [ test (',' test)* [','] ] | '>>' test [ (',' test)+ [','] ] )
 print_statement ::= KW_PRINT ;
@@ -463,18 +514,18 @@ decorated ::= decorators class_definition ;
 decorated ::= decorators function_definition ;
 decorators ::= decorator ;
 decorators ::= decorators decorator ;
-decorator ::= OP_PLUSHKA qualified_name DL_NEWLINE ;
-decorator ::= OP_PLUSHKA qualified_name DL_LEFT_PAREN arguments_list DL_RIGHT_PAREN DL_NEWLINE ;
+decorator ::= OP_AT qualified_name DL_NEWLINE ;
+decorator ::= OP_AT qualified_name DL_LEFT_PAREN arguments_list DL_RIGHT_PAREN DL_NEWLINE ;
 
 -- Decorated end
 
 -- Class begin
-class_definition ::= KW_CLASS TK_IDENTIFIER DL_COLON suite;
-class_definition ::= KW_CLASS TK_IDENTIFIER DL_LEFT_PAREN qualified_names_list DL_RIGHT_PAREN DL_COLON suite;
+class_definition ::= KW_CLASS IDENTIFIER DL_COLON suite;
+class_definition ::= KW_CLASS IDENTIFIER DL_LEFT_PAREN qualified_names_list DL_RIGHT_PAREN DL_COLON suite;
 -- Class end
 
 -- function definition begin
-function_param_def ::= TK_IDENTIFIER ;
+function_param_def ::= IDENTIFIER ;
 function_param_def ::= DL_LEFT_PAREN function_param_list DL_RIGHT_PAREN ;
 function_param_list_head ::= function_param_list_head DL_COMMA function_param_def ;
 function_param_list ::= function_param_list_head ;
@@ -491,13 +542,21 @@ function_param_full_list ::= function_param_full_list_head DL_COMMA ;
 --              ('*' NAME [',' '**' NAME] | '**' NAME) |
 --              fpdef ['=' test] (',' fpdef ['=' test])* [','])
 var_arguments_list ::= function_param_full_list ;
-var_arguments_list ::= function_param_full_list_head DL_COMMA OP_POWER TK_IDENTIFIER ;
+var_arguments_list ::= function_param_full_list_head DL_COMMA OP_POWER IDENTIFIER ;
 
 function_parameters ::= DL_LEFT_PAREN DL_RIGHT_PAREN ;
 function_parameters ::= DL_LEFT_PAREN var_arguments_list DL_RIGHT_PAREN ;
-function_definition ::= KW_DEF TK_IDENTIFIER function_parameters DL_COLON suite ;
+function_definition ::= KW_DEF IDENTIFIER function_parameters DL_COLON suite ;
 
 -- function definition end
+
+-- With begin
+with_item ::= test ;
+with_item ::= test KW_AS test_of_binary ; -- TODO: replace "test_of_binary" with "expression"
+with_items_list ::= with_item ;
+with_items_list ::= with_items_list DL_COMMA with_item ;
+with_statement ::= KW_WITH with_items_list DL_COLON suite ;
+-- With end
 
 -- try statement begin
 except_clause ::= KW_EXCEPT ;
@@ -552,7 +611,7 @@ compound_statement ::= if_statement ;
 compound_statement ::= while_statement ;
 compound_statement ::= for_statement ;
 compound_statement ::= try_statement ;
---compound_statement ::= with_statement ;
+compound_statement ::= with_statement ;
 compound_statement ::= function_definition ;
 compound_statement ::= class_definition ;
 compound_statement ::= decorated ;

@@ -67,11 +67,11 @@ simplestring_dquote \"([^"\\\n]*(\\(.|\n)[^"\\\n]*)*)\"
 
 simplestring ({simplestring_squote}|{simplestring_dquote})
 
-escapednewline \\[\n]
+escapednewline \\\n[ \t]*
 
 %%
 
-<*>escapednewline                       { /* skip */ }
+<*>{escapednewline}                       { /* skip */ }
 <*>[\r]+                                { /* skip */ }
 
 <*>[\n]         {
@@ -80,6 +80,10 @@ escapednewline \\[\n]
         BEGIN(INITIAL);
         return DL_NEWLINE;
     }
+
+<*>#.* {
+  /* skip */
+}
 
 <INITIAL>[ ]         { context.indentCurrent += 1; }
 <INITIAL>[\t]        { context.indentCurrent += 4; }
@@ -120,7 +124,7 @@ escapednewline \\[\n]
             matching[1] = matching[2];
             matching[2] = yyinput();
             if ((matching[2] == 0) || (matching[2] == EOF))
-                return TK_ERROR;
+                return ERROR;
             if (matching[0] == '\\') {
                 qtext += matching[0];
                 qtext += matching[1];
@@ -131,7 +135,37 @@ escapednewline \\[\n]
             }
             if ((matching[0] == '\"') && (matching[1] == '\"') && (matching[2] == '\"')) {
                 yylval.s = intern(qtext);
-                puts(qtext.toAscii());
+                return LT_STRING;
+            }
+            if (qtext.size() == qtext.capacity())
+                qtext.reserve(qtext.size() + 100);
+            qtext += matching[0];
+        }
+    }
+
+<ONSTATEMENT>\'\'\' {
+        //! TODO: May be refactor it? Anyway, it works.
+        QString qtext;
+        qtext.reserve(100);
+        int matching[3];
+        matching[1] = yyinput();
+        matching[2] = yyinput();
+        for (;;) {
+            matching[0] = matching[1];
+            matching[1] = matching[2];
+            matching[2] = yyinput();
+            if ((matching[2] == 0) || (matching[2] == EOF))
+                return ERROR;
+            if (matching[0] == '\\') {
+                qtext += matching[0];
+                qtext += matching[1];
+                matching[0] = matching[1];
+                matching[1] = matching[2];
+                matching[2] = yyinput();
+                continue;
+            }
+            if ((matching[0] == '\'') && (matching[1] == '\'') && (matching[2] == '\'')) {
+                yylval.s = intern(qtext);
                 return LT_STRING;
             }
             if (qtext.size() == qtext.capacity())
@@ -151,6 +185,7 @@ escapednewline \\[\n]
 <ONSTATEMENT>"import" { return KW_IMPORT; }
 <ONSTATEMENT>"from" { return KW_FROM; }
 <ONSTATEMENT>"as" { return KW_AS; }
+<ONSTATEMENT>"with" { return KW_WITH; }
 <ONSTATEMENT>"while" { return KW_WHILE; }
 <ONSTATEMENT>"for" { return KW_FOR; }
 <ONSTATEMENT>"if" { return KW_IF; }
@@ -169,6 +204,7 @@ escapednewline \\[\n]
 <ONSTATEMENT>"print" { return KW_PRINT; }
 <ONSTATEMENT>"class" { return KW_CLASS; }
 <ONSTATEMENT>"def" { return KW_DEF; }
+<ONSTATEMENT>"lambda" { return KW_LAMBDA; }
 
 <ONSTATEMENT>"or" { return KW_OR; }
 <ONSTATEMENT>"is" { return KW_IS; }
@@ -185,7 +221,17 @@ escapednewline \\[\n]
 <ONSTATEMENT>")" { return DL_RIGHT_PAREN; }
 <ONSTATEMENT>"[" { return DL_LEFT_BRACKET; }
 <ONSTATEMENT>"]" { return DL_RIGHT_BRACKET; }
+<ONSTATEMENT>"{" { return DL_LEFT_BRACE; }
+<ONSTATEMENT>"}" { return DL_RIGHT_BRACE; }
 <ONSTATEMENT>";" { return DL_SEMICOLON; }
+
+<ONSTATEMENT>"+=" { return OP_AUG_PLUS; }
+<ONSTATEMENT>"-=" { return OP_AUG_MINUS; }
+<ONSTATEMENT>"**=" { return OP_AUG_POWER; }
+<ONSTATEMENT>"*=" { return OP_AUG_MUL; }
+<ONSTATEMENT>"//=" { return OP_AUG_FLOORDIV; }
+<ONSTATEMENT>"/=" { return OP_AUG_DIV; }
+<ONSTATEMENT>"%=" { return OP_AUG_MOD; }
 
 <ONSTATEMENT>"+" { return OP_PLUS; }
 <ONSTATEMENT>"-" { return OP_MINUS; }
@@ -200,15 +246,12 @@ escapednewline \\[\n]
 <ONSTATEMENT>"." { return OP_DOT; }
 <ONSTATEMENT>"**" { return OP_POWER; }
 <ONSTATEMENT>"%" { return OP_MOD; }
-<ONSTATEMENT>"@" { return OP_PLUSHKA; }
-
-<ONSTATEMENT>#.* {
-  /* skip */
-}
+<ONSTATEMENT>"*" { return OP_MUL; }
+<ONSTATEMENT>"@" { return OP_AT; }
 
 <ONSTATEMENT>[_a-zA-Z][_a-zA-Z0-9]* {
   yylval.s = intern (yytext);
-  return TK_IDENTIFIER;
+  return IDENTIFIER;
 }
 
 <ONSTATEMENT>{icst} {
@@ -272,8 +315,8 @@ escapednewline \\[\n]
 }
 
 <ONSTATEMENT>. {
-  fprintf (stderr, "invalid char: %d\n", yytext [0]);
-  return TK_ERROR;
+  fprintf (stderr, "invalid char: %d, or %c\n", (int) yytext [0], (char)(yytext[0]));
+  return ERROR;
 }
 
 
