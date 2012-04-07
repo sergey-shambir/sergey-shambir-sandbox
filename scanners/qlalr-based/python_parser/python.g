@@ -185,12 +185,14 @@ protected:
         int line;
         /* Python semantics depends on indentation level, so we should keep it */
         int indentCurrent;
+        int implicitJoiningLevel;
         QStack<int> indents;
         const QString *function_name;
         QString fileName;
 
         void init()
         {
+            implicitJoiningLevel = 0;
             line = 1;
             indentCurrent = 0;
             function_name = 0;
@@ -631,6 +633,7 @@ statements_list ::= statements_list common_statement ;
         else
         {
             // ### ERROR RECOVERY HERE
+            context.implicitJoiningLevel = 0;
             fprintf (stderr, "%s:%d: Syntax Error\n", qPrintable(context.fileName), context.line);
             do {
                 yytoken = nextToken();

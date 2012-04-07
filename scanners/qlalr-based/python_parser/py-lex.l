@@ -67,6 +67,8 @@ simplestring_dquote \"([^"\\\n]*(\\(.|\n)[^"\\\n]*)*)\"
 
 simplestring ({simplestring_squote}|{simplestring_dquote})
 
+newline \n\r|\r|\n
+
 escapednewline \\\n[ \t]*
 
 %%
@@ -74,11 +76,13 @@ escapednewline \\\n[ \t]*
 <*>{escapednewline}                       { /* skip */ }
 <*>[\r]+                                { /* skip */ }
 
-<*>[\n]         {
-        ++context.line;
-        context.indentCurrent = 0;
-        BEGIN(INITIAL);
-        return DL_NEWLINE;
+<*>\n         {
+        if (context.implicitJoiningLevel == 0) {
+            ++context.line;
+            context.indentCurrent = 0;
+            BEGIN(INITIAL);
+            return DL_NEWLINE;
+        }
     }
 
 <*>#.* {
@@ -217,12 +221,30 @@ escapednewline \\\n[ \t]*
 
 <ONSTATEMENT>":" { return DL_COLON; }
 <ONSTATEMENT>"," { return DL_COMMA; }
-<ONSTATEMENT>"(" { return DL_LEFT_PAREN; }
-<ONSTATEMENT>")" { return DL_RIGHT_PAREN; }
-<ONSTATEMENT>"[" { return DL_LEFT_BRACKET; }
-<ONSTATEMENT>"]" { return DL_RIGHT_BRACKET; }
-<ONSTATEMENT>"{" { return DL_LEFT_BRACE; }
-<ONSTATEMENT>"}" { return DL_RIGHT_BRACE; }
+<ONSTATEMENT>"(" {
+        ++context.implicitJoiningLevel;
+        return DL_LEFT_PAREN;
+    }
+<ONSTATEMENT>")" {
+        --context.implicitJoiningLevel;
+        return DL_RIGHT_PAREN;
+    }
+<ONSTATEMENT>"[" {
+        ++context.implicitJoiningLevel;
+        return DL_LEFT_BRACKET;
+    }
+<ONSTATEMENT>"]" {
+        --context.implicitJoiningLevel;
+        return DL_RIGHT_BRACKET;
+    }
+<ONSTATEMENT>"{" {
+        ++context.implicitJoiningLevel;
+        return DL_LEFT_BRACE;
+    }
+<ONSTATEMENT>"}" {
+        --context.implicitJoiningLevel;
+        return DL_RIGHT_BRACE;
+    }
 <ONSTATEMENT>";" { return DL_SEMICOLON; }
 
 <ONSTATEMENT>"+=" { return OP_AUG_PLUS; }
