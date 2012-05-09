@@ -1,0 +1,28 @@
+#summary the article describes why good python integration in QtCreator is useful.
+#labels Featured
+
+=Introduction =
+
+Python support in QtCreator had been requested many times at Qt Interests mail list, some english blogs and a few of the most visited russian IT resources (habrahabr.ru & linux.org.ru).
+
+There were several attempts to implement Python support in QtCreator.
+1) from PySide developers here https://github.com/PySide/QtCreator
+2) another attempt here https://qt.gitorious.org/~renatofilho/pyside/renatofilhos-qt-creator
+3) Simple IDE inspired by QtCreator and written at Python/PyQt4
+[http://www.linux.org.ru/forum/development/5735975 LOR topic]
+[http://www.dixen.cz/neeric/1.png screenshot #1]
+[http://www.dixen.cz/neeric/3.png screenshot #2]
+[http://www.dixen.cz/neeric/4.png screenshot #3]
+This project is abandoned now.
+
+Also there is good python parser in KDevelop IDE (this parser used in attempts 1-2). It includes python 2.7 source code and may be incompatible with python3, Jython, IronPython and other implementations.
+
+= Requested features =
+Here are some quotes from the posts on the linux.org.ru forum:
+[LOR requests | LOR requests (Russian)]
+
+= Possible use cases of python plugins in QtCreator =
+  * Create hybrid applications written at both Python and C++ languages. Tags: boost::python, Shed Skin, embedding python/writing python modules.
+  * Develop PyQt4 and PySide applications with good editor, integrated QtDesigner, integrated help system and debuggers.
+  * Use python as utility language for writing tests, scripts, style checkers, converters and code generators
+  * Create scripts useful at desktop Linux that installs python interpreter and a lot of modules by default.
