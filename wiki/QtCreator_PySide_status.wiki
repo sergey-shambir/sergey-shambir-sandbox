@@ -21,3 +21,6 @@ Already works:
 Nokia plugin created by PySide developers.
   * Just updated to the compile in the latest QtCreator version.
   * Creates single .py file instead of project
+
+= Plugin repository on gitorious =
+[https://qt.gitorious.org/~sergey-shambir/qt-creator/qt-creator-py-reborn repository]
