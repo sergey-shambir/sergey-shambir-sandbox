@@ -1,0 +1,23 @@
+#summary status for all plugins that provide PySide support in QtCreator
+#labels Featured
+
+= Python library =
+Library with python language tools.
+
+Already works:
+  * Lexical analyzer (ignores comments/doxygen comments)
+  * Python parser based on QLalr. Nor error recovering neither abstract/parse trees generator are implemented.
+
+= PyEditor plugin =
+Implements python source editor, file wizard and class wizard.
+
+Already works:
+  * File wizard
+  * Class wizard (similar to C++ non-GUI class wizard)
+  * Syntax highlighter (semantic highlight not implemented)
+  * Smart indentation (semantic indentation not implemented, e.g. back indent always equal 4 spaces)
+
+= PythonProjectManager plugin =
+Nokia plugin created by PySide developers.
+  * Just updated to the compile in the latest QtCreator version.
+  * Creates single .py file instead of project
