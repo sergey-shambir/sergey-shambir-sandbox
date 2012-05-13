@@ -1,10 +1,10 @@
 #summary status for all plugins that provide PySide support in QtCreator
 #labels Featured
 
-= Utils library (it's part of QtCreator) =
+= Utils library (it's part of `QtCreator`) =
 Patched NewClassPage to use it as Python class wizard.
 
-= Todo plugin (it's part of QtCreator) =
+= Todo plugin (it's part of `QtCreator`) =
 Nothing changed. Should implement source document model manager for Python and than add PyTodoScanner class to integrate Todo plugin with our Python plugins.
 
 = Python library =
