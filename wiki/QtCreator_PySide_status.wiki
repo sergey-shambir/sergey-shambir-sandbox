@@ -1,6 +1,12 @@
 #summary status for all plugins that provide PySide support in QtCreator
 #labels Featured
 
+= Utils library (it's part of QtCreator) =
+Patched NewClassPage to use it as Python class wizard.
+
+= Todo plugin (it's part of QtCreator) =
+Nothing changed. Should implement source document model manager for Python and than add PyTodoScanner class to integrate Todo plugin with our Python plugins.
+
 = Python library =
 Library with python language tools.
 
@@ -8,7 +14,7 @@ Already works:
   * Lexical analyzer (ignores comments/doxygen comments)
   * Python parser based on QLalr. Nor error recovering neither abstract/parse trees generator are implemented.
 
-= PyEditor plugin =
+= `PyEditor` plugin =
 Implements python source editor, file wizard and class wizard.
 
 Already works:
@@ -17,9 +23,9 @@ Already works:
   * Syntax highlighter (semantic highlight not implemented)
   * Smart indentation (semantic indentation not implemented, e.g. back indent always equal 4 spaces)
 
-= PythonProjectManager plugin =
+= `PythonProjectManager` plugin =
 Nokia plugin created by PySide developers.
-  * Just updated to the compile in the latest QtCreator version.
+  * Just updated to the compile in the latest `QtCreator` version.
   * Creates single .py file instead of project
 
 = Plugin repository on gitorious =
