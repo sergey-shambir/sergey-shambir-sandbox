@@ -1,0 +1,1 @@
+Useless plug-ins & studying gadgets from Sergey Shambir (Mari State Technical University, Russia)
